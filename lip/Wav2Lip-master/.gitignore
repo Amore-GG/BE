@@ -1,0 +1,41 @@
+# 가상환경
+amore8/
+venv/
+env/
+.venv/
+
+# Python 캐시
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 모델 체크포인트 (용량 큼 - 별도 다운로드)
+checkpoints/*.pt
+checkpoints/*.pth
+face_detection/detection/sfd/*.pth
+
+# 생성된 파일/결과물
+results/*.mp4
+results/*.avi
+temp/*
+uploads/*
+
+# 테스트용 미디어 파일 (선택적)
+# *.mp4
+# *.wav
+# *.mp3
+
+# IDE/에디터
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# 환경 설정
+.env
+.env.local
+
+# 로그
+*.log

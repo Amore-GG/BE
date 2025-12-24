@@ -1,0 +1,22 @@
+# 가상환경 제외 (용량 큼)
+amore8/
+
+# 캐시 제외
+__pycache__/
+*.pyc
+*.pyo
+
+# Git 제외
+.git/
+
+# 불필요한 파일
+*.md
+evaluation/
+filelists/
+*.txt
+!requirements.txt
+
+# 임시 파일
+temp/*
+!temp/README.md
+

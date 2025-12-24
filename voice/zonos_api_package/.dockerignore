@@ -1,0 +1,13 @@
+checkpoints/
+generated_audio/
+.git/
+__pycache__/
+*.pt
+*.pth
+*.safetensors
+*.mp3
+*.wav
+*.mp4
+*.avi
+*.webm
+assets/

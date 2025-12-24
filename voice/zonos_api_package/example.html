@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zonos TTS Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 32px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .slider-value {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #764ba2;
+        }
+
+        .emotion-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .emotion-btn {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .emotion-btn:hover {
+            border-color: #667eea;
+        }
+
+        .emotion-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        button.generate-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+
+        button.generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button.generate-btn:active {
+            transform: translateY(0);
+        }
+
+        button.generate-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .audio-player {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .audio-player.show {
+            display: block;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        .loader.show {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Zonos TTS Demo</h1>
+
+        <div class="input-group">
+            <label for="text">텍스트</label>
+            <textarea id="text" rows="4" placeholder="음성으로 변환할 텍스트를 입력하세요...">안녕하세요. Zonos TTS 데모입니다.</textarea>
+        </div>
+
+        <div class="input-group">
+            <label for="language">언어</label>
+            <select id="language">
+                <option value="ko">한국어</option>
+                <option value="en-us">English (US)</option>
+                <option value="ja">日本語</option>
+                <option value="cmn">中文</option>
+                <option value="fr-fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="es">Español</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>감정</label>
+            <div class="emotion-buttons">
+                <button class="emotion-btn active" data-emotion="neutral">중립</button>
+                <button class="emotion-btn" data-emotion="happy">행복</button>
+                <button class="emotion-btn" data-emotion="sad">슬픔</button>
+                <button class="emotion-btn" data-emotion="angry">화남</button>
+            </div>
+        </div>
+
+        <div class="slider-group">
+            <div class="slider-label">
+                <label>말하기 속도</label>
+                <span class="slider-value" id="speedValue">15.0</span>
+            </div>
+            <input type="range" id="speed" min="10" max="30" value="15" step="0.5">
+        </div>
+
+        <div class="slider-group">
+            <div class="slider-label">
+                <label>음높이 변화</label>
+                <span class="slider-value" id="pitchValue">20.0</span>
+            </div>
+            <input type="range" id="pitch" min="10" max="150" value="20" step="1">
+        </div>
+
+        <button class="generate-btn" onclick="generateSpeech()">
+            🎵 음성 생성
+        </button>
+
+        <div class="loader" id="loader"></div>
+
+        <div class="status" id="status" style="display: none;"></div>
+
+        <div class="audio-player" id="audioPlayer">
+            <h3>생성된 음성</h3>
+            <audio id="audio" controls></audio>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        const emotionPresets = {
+            neutral: [0.3077, 0.0256, 0.0256, 0.0256, 0.0256, 0.0256, 0.2564, 0.3077],
+            happy: [0.8, 0.01, 0.01, 0.01, 0.05, 0.01, 0.05, 0.06],
+            sad: [0.01, 0.8, 0.01, 0.01, 0.01, 0.01, 0.05, 0.1],
+            angry: [0.01, 0.01, 0.1, 0.01, 0.01, 0.7, 0.1, 0.06]
+        };
+
+        let selectedEmotion = 'neutral';
+
+        // 감정 버튼 이벤트
+        document.querySelectorAll('.emotion-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.emotion-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedEmotion = this.dataset.emotion;
+            });
+        });
+
+        // 슬라이더 값 업데이트
+        document.getElementById('speed').addEventListener('input', function() {
+            document.getElementById('speedValue').textContent = this.value;
+        });
+
+        document.getElementById('pitch').addEventListener('input', function() {
+            document.getElementById('pitchValue').textContent = this.value;
+        });
+
+        async function generateSpeech() {
+            const text = document.getElementById('text').value;
+            const language = document.getElementById('language').value;
+            const speed = parseFloat(document.getElementById('speed').value);
+            const pitch = parseFloat(document.getElementById('pitch').value);
+            const emotion = emotionPresets[selectedEmotion];
+
+            if (!text.trim()) {
+                showStatus('텍스트를 입력하세요', 'error');
+                return;
+            }
+
+            // UI 업데이트
+            document.querySelector('.generate-btn').disabled = true;
+            document.getElementById('loader').classList.add('show');
+            document.getElementById('audioPlayer').classList.remove('show');
+            showStatus('음성 생성 중...', 'loading');
+
+            try {
+                // API 요청
+                const response = await fetch(`${API_URL}/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        language: language,
+                        emotion: emotion,
+                        speaking_rate: speed,
+                        pitch_std: pitch,
+                        cfg_scale: 2.5
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('음성 생성 실패');
+                }
+
+                const result = await response.json();
+
+                // 오디오 재생
+                const audioUrl = `${API_URL}/audio/${result.audio_file}`;
+                document.getElementById('audio').src = audioUrl;
+                document.getElementById('audioPlayer').classList.add('show');
+
+                showStatus('✅ 음성 생성 완료!', 'success');
+            } catch (error) {
+                showStatus('❌ 오류: ' + error.message, 'error');
+                console.error('Error:', error);
+            } finally {
+                document.querySelector('.generate-btn').disabled = false;
+                document.getElementById('loader').classList.remove('show');
+            }
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        // 헬스 체크
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    console.log('✅ API 서버 연결 성공');
+                }
+            } catch (error) {
+                showStatus('⚠️ API 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.', 'error');
+            }
+        }
+
+        // 페이지 로드 시 헬스 체크
+        checkHealth();
+    </script>
+</body>
+</html>

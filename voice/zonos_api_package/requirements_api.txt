@@ -1,0 +1,29 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.6.0
+python-multipart==0.0.6
+requests
+
+# 딥러닝 및 오디오 관련
+torch
+torchaudio
+
+# 모델 및 데이터 유틸
+safetensors
+huggingface_hub
+tqdm
+
+# 텍스트/음소 처리 등
+phonemizer
+inflect
+kanjize
+sudachipy
+
+# 추가로 사용되는 외부 패키지 (필요에 따라)
+gunicorn
+sudachipy==0.6.8
+sudachidict_core==20240109
+
+# 추가 설치
+transformers
+sudachidict_full
