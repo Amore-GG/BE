@@ -1,18 +1,9 @@
-# =============================================
-# 아모레 AI 서비스 - CI/CD Pipeline
-# GitHub Actions 워크플로우
-# =============================================
-
 name: Build and Deploy AI Services
 
 on:
   push:
     branches:
-      - main
       - develop
-  pull_request:
-    branches:
-      - main
 
 env:
   REGISTRY: ghcr.io
