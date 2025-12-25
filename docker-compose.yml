@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   voice-api:
-    image: ghcr.io/<너의계정>/amore-ai-voice:latest
+    image: ghcr.io/nninji/amore-ai-voice:latest
     container_name: voice-api
     ports:
       - "1000:1000"
@@ -18,7 +18,7 @@ services:
           memory: 8G
 
   lip-api:
-    image: ghcr.io/<너의계정>/amore-ai-lip:latest
+    image: ghcr.io/nninji/amore-ai-lip:latest
     container_name: lip-api
     ports:
       - "2000:2000"

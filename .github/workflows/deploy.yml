@@ -2,8 +2,7 @@ name: Build and Deploy AI Services
 
 on:
   push:
-    branches:
-      - feat/deploy
+    branches: [feat/deploy]
   workflow_dispatch:
     inputs:
       force_build:
@@ -23,7 +22,6 @@ jobs:
       lip: ${{ steps.filter.outputs.lip }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -35,26 +33,21 @@ jobs:
 
   build-voice:
     needs: detect-changes
-    # 변경이 있거나, 수동 실행 + force_build=true면 무조건 실행
     if: |
       needs.detect-changes.outputs.voice == 'true' ||
-      github.event_name == 'workflow_dispatch' && github.event.inputs.force_build == 'true'
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.force_build == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/setup-buildx-action@v3
-
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: docker/build-push-action@v5
         with:
           context: ./voice/zonos_api_package
@@ -65,26 +58,21 @@ jobs:
 
   build-lip:
     needs: detect-changes
-    # 변경이 있거나, 수동 실행 + force_build=true면 무조건 실행
     if: |
       needs.detect-changes.outputs.lip == 'true' ||
-      github.event_name == 'workflow_dispatch' && github.event.inputs.force_build == 'true'
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.force_build == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/setup-buildx-action@v3
-
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: docker/build-push-action@v5
         with:
           context: ./lip/Wav2Lip-master
@@ -94,11 +82,12 @@ jobs:
             ghcr.io/${{ env.IMAGE_PREFIX }}-lip:${{ github.sha }}
 
   deploy:
-    # build가 skipped여도 deploy는 돌릴 수 있게 always()
     needs: [build-voice, build-lip]
-    if: always()
+    # build가 둘 다 skipped면 deploy도 안 함
+    if: |
+      always() &&
+      (needs.build-voice.result == 'success' || needs.build-lip.result == 'success')
     runs-on: ubuntu-latest
-
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
@@ -109,10 +98,6 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.SERVER_PATH }}
-
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
-
-            # 너무 공격적으로 prune하면 캐시/레이어 다시받아서 느려질 수 있음
             docker image prune -f
-            echo "Deployment completed at $(date)"
