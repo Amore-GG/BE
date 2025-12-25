@@ -3,16 +3,14 @@ name: Build and Deploy AI Services
 on:
   push:
     branches:
-      - develop
+      - feat/deploy
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}/amore-ai
+  IMAGE_PREFIX: nninji/amore-ai
 
 jobs:
-  # ─────────────────────────────────────────
-  # 변경된 서비스 감지
-  # ─────────────────────────────────────────
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -20,7 +18,6 @@ jobs:
       lip: ${{ steps.filter.outputs.lip }}
     steps:
       - uses: actions/checkout@v4
-      
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -30,109 +27,55 @@ jobs:
             lip:
               - 'lip/Wav2Lip-master/**'
 
-  # ─────────────────────────────────────────
-  # Voice API 빌드 & 푸시
-  # ─────────────────────────────────────────
   build-voice:
     needs: detect-changes
-    if: needs.detect-changes.outputs.voice == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.detect-changes.outputs.voice == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       packages: write
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-voice
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Voice API
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
         with:
           context: ./voice/zonos_api_package
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_PREFIX }}-voice:latest
+            ghcr.io/${{ env.IMAGE_PREFIX }}-voice:${{ github.sha }}
 
-  # ─────────────────────────────────────────
-  # Lip API 빌드 & 푸시
-  # ─────────────────────────────────────────
   build-lip:
     needs: detect-changes
-    if: needs.detect-changes.outputs.lip == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.detect-changes.outputs.lip == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       packages: write
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-lip
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Lip API
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
         with:
           context: ./lip/Wav2Lip-master
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_PREFIX }}-lip:latest
+            ghcr.io/${{ env.IMAGE_PREFIX }}-lip:${{ github.sha }}
 
-  # ─────────────────────────────────────────
-  # 서버 배포 (SSH)
-  # ─────────────────────────────────────────
   deploy:
     needs: [build-voice, build-lip]
-    if: always() && github.ref == 'refs/heads/main' && (needs.build-voice.result == 'success' || needs.build-lip.result == 'success' || needs.build-voice.result == 'skipped' || needs.build-lip.result == 'skipped')
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Deploy to Server via SSH
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -140,15 +83,6 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd ${{ secrets.SERVER_PATH }}
-            
-            # 최신 코드 pull
-            git pull origin main
-            
-            # Docker 이미지 pull & 재시작
-            docker-compose pull
-            docker-compose up -d --remove-orphans
-            
-            # 오래된 이미지 정리
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
-            
-            echo "Deployment completed at $(date)"

@@ -1,67 +1,40 @@
-version: '3.8'
+version: "3.8"
+
 services:
-  # ─────────────────────────────────────────
-  # Voice API (TTS - 텍스트 → 음성)
-  # ─────────────────────────────────────────
   voice-api:
-    build:
-      context: ./voice/zonos_api_package
-      dockerfile: Dockerfile
+    image: ghcr.io/<너의계정>/amore-ai-voice:latest
     container_name: voice-api
     ports:
       - "1000:1000"
     environment:
+      - ENV=production
       - PYTHONUNBUFFERED=1
-      - SERVICE_NAME=voice-api
     volumes:
       - voice_output:/app/generated_audio
-    networks:
-      - ai-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:1000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s  # 모델 로딩 시간 고려
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 8G
 
-  # ─────────────────────────────────────────
-  # Lip API (Wav2Lip - 영상 + 음성 → lipsync 영상)
-  # ─────────────────────────────────────────
   lip-api:
-    build:
-      context: ./lip/Wav2Lip-master
-      dockerfile: Dockerfile
+    image: ghcr.io/<너의계정>/amore-ai-lip:latest
     container_name: lip-api
     ports:
       - "2000:2000"
     environment:
+      - ENV=production
       - PYTHONUNBUFFERED=1
-      - SERVICE_NAME=lip-api
     volumes:
       - lip_output:/app/results
       - lip_uploads:/app/uploads
-    networks:
-      - ai-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-networks:
-  ai-network:
-    driver: bridge
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 4G
 
-# ─────────────────────────────────────────
-# 볼륨 (데이터 영속성)
-# ─────────────────────────────────────────
 volumes:
   voice_output:
-    driver: local
   lip_output:
-    driver: local
   lip_uploads:
-    driver: local
-

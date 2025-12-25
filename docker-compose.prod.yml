@@ -1,79 +1,36 @@
-version: '3.8'
-
-# =============================================
-# 프로덕션 환경용 Docker Compose
-# docker-compose -f docker-compose.prod.yml up -d
-# =============================================
+version: "3.8"
 
 services:
   voice-api:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/amore-ai-voice:latest
-    container_name: voice-api
+    build:
+      context: ./voice/zonos_api_package
+      dockerfile: Dockerfile
+    container_name: voice-api-dev
     ports:
-      - "${VOICE_API_PORT:-1000}:1000"
+      - "1000:1000"
     environment:
+      - ENV=dev
       - PYTHONUNBUFFERED=1
-      - SERVICE_NAME=voice-api
-      - ENV=production
     volumes:
       - voice_output:/app/generated_audio
-    networks:
-      - ai-network
-    restart: always
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-        reservations:
-          memory: 4G
+    restart: unless-stopped
 
   lip-api:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/amore-ai-lip:latest
-    container_name: lip-api
+    build:
+      context: ./lip/Wav2Lip-master
+      dockerfile: Dockerfile
+    container_name: lip-api-dev
     ports:
-      - "${LIP_API_PORT:-2000}:2000"
+      - "2000:2000"
     environment:
+      - ENV=dev
       - PYTHONUNBUFFERED=1
-      - SERVICE_NAME=lip-api
-      - ENV=production
     volumes:
       - lip_output:/app/results
       - lip_uploads:/app/uploads
-    networks:
-      - ai-network
-    restart: always
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-        reservations:
-          memory: 2G
-
-  # ─────────────────────────────────────────
-  # (선택) Nginx 리버스 프록시
-  # ─────────────────────────────────────────
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: nginx-proxy
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./ssl:/etc/nginx/ssl:ro
-  #   networks:
-  #     - ai-network
-  #   depends_on:
-  #     - voice-api
-  #     - lip-api
-  #   restart: always
-
-networks:
-  ai-network:
-    driver: bridge
+    restart: unless-stopped
 
 volumes:
   voice_output:
   lip_output:
   lip_uploads:
-
