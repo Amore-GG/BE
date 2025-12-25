@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}/amore-ai
+  IMAGE_PREFIX: nninji/amore-ai
 
 jobs:
   # ----------------------------
