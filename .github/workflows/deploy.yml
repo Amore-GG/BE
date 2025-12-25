@@ -5,9 +5,13 @@ on:
     branches: [ feat/deploy ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: nninji/amore-ai
+  IMAGE_PREFIX: amore-gg/amore-ai
 
 jobs:
   # ----------------------------
