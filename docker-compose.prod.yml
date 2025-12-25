@@ -2,28 +2,24 @@ version: "3.8"
 
 services:
   voice-api:
-    build:
-      context: ./voice/zonos_api_package
-      dockerfile: Dockerfile
-    container_name: voice-api-dev
+    image: ghcr.io/amore-gg/amore-ai-voice:latest
+    container_name: voice-api
     ports:
       - "1000:1000"
     environment:
-      - ENV=dev
+      - ENV=prod
       - PYTHONUNBUFFERED=1
     volumes:
       - voice_output:/app/generated_audio
     restart: unless-stopped
 
   lip-api:
-    build:
-      context: ./lip/Wav2Lip-master
-      dockerfile: Dockerfile
-    container_name: lip-api-dev
+    image: ghcr.io/amore-gg/amore-ai-lip:latest
+    container_name: lip-api
     ports:
       - "2000:2000"
     environment:
-      - ENV=dev
+      - ENV=prod
       - PYTHONUNBUFFERED=1
     volumes:
       - lip_output:/app/results
