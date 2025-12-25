@@ -1,22 +1,23 @@
-FROM python:3.10
+FROM python:3.10-slim
 
 WORKDIR /app
-
 ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
 
-# Rust 및 빌드 도구 설치
+# (필요 최소) 빌드/런타임 패키지 + Rust
 RUN apt-get update && \
-    apt-get install -y curl build-essential && \
+    apt-get install -y --no-install-recommends curl build-essential && \
     curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-    apt-get clean
+    apt-get purge -y curl && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 COPY requirements_api.txt ./
-RUN pip install --upgrade pip && pip install -r requirements_api.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements_api.txt
 
 COPY . .
-
 EXPOSE 1000
-
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "1000"]

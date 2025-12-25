@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: nninji/amore-ai
+  IMAGE_PREFIX: ${{ github.repository_owner }}/amore-ai
 
 jobs:
   # ----------------------------
@@ -92,7 +92,7 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.SERVER_PATH }}
-            
+
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
