@@ -8,6 +8,7 @@ python-multipart==0.0.6
 requests
 
 # 딥러닝 및 오디오 관련
+numpy<2.0
 torch==2.2.1
 torchvision==0.17.1
 torchaudio==2.2.1
