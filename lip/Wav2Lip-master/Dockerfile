@@ -12,7 +12,7 @@ RUN apt-get update && \
 # requirements 설치
 COPY requirements.txt ./
 RUN pip install --upgrade pip && \
-    pip install numpy scipy librosa opencv-python opencv-contrib-python torch torchvision torchaudio tqdm soundfile audioread && \
+    pip install numpy scipy "librosa==0.9.2" opencv-python opencv-contrib-python torch torchvision torchaudio tqdm soundfile audioread && \
     pip install fastapi uvicorn[standard] python-multipart pydantic
 
 COPY . .
