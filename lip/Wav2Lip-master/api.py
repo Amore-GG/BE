@@ -7,7 +7,10 @@ import os
 import uuid
 import subprocess
 import shutil
+import time
+import asyncio
 from datetime import datetime
+from pathlib import Path
 
 # FastAPI 앱 초기화
 app = FastAPI(title="Wav2Lip API", version="1.0.0")
@@ -32,6 +35,35 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 # 기본 체크포인트 경로
 DEFAULT_CHECKPOINT = "checkpoints/Wav2Lip-SD-GAN.pt"
+
+# 파일 자동 삭제 설정 (시간 단위)
+FILE_MAX_AGE_HOURS = 1
+
+
+def cleanup_old_files(directory: str, max_age_hours: int = FILE_MAX_AGE_HOURS):
+    """오래된 파일 삭제"""
+    now = time.time()
+    deleted_count = 0
+    for file in Path(directory).glob("*"):
+        if file.is_file():
+            age_hours = (now - file.stat().st_mtime) / 3600
+            if age_hours > max_age_hours:
+                try:
+                    file.unlink()
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"파일 삭제 실패 {file}: {e}")
+    if deleted_count > 0:
+        print(f"[Cleanup] {directory}: {deleted_count}개 오래된 파일 삭제됨")
+
+
+async def periodic_cleanup():
+    """주기적으로 오래된 파일 삭제 (30분마다)"""
+    while True:
+        await asyncio.sleep(1800)  # 30분
+        cleanup_old_files(OUTPUT_DIR)
+        cleanup_old_files(UPLOAD_DIR)
+        cleanup_old_files(TEMP_DIR)
 
 
 class LipsyncResponse(BaseModel):
@@ -58,6 +90,15 @@ async def startup_event():
         print(f"모델 체크포인트 확인됨: {DEFAULT_CHECKPOINT}")
     else:
         print(f"경고: 모델 체크포인트를 찾을 수 없습니다: {DEFAULT_CHECKPOINT}")
+    
+    # 시작 시 오래된 파일 정리
+    cleanup_old_files(OUTPUT_DIR)
+    cleanup_old_files(UPLOAD_DIR)
+    cleanup_old_files(TEMP_DIR)
+    
+    # 백그라운드 정리 태스크 시작
+    asyncio.create_task(periodic_cleanup())
+    print(f"[Cleanup] 자동 파일 정리 활성화 ({FILE_MAX_AGE_HOURS}시간 이상 파일 삭제)")
     
     print("Wav2Lip API 준비 완료!")
 
