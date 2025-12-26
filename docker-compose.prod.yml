@@ -24,6 +24,8 @@ services:
     volumes:
       - lip_output:/app/results
       - lip_uploads:/app/uploads
+      - /home/ubuntu/amore-ai/lip/checkpoints:/app/checkpoints
+      - /home/ubuntu/amore-ai/lip/face_detection/detection/sfd/s3fd.pth:/app/face_detection/detection/sfd/s3fd.pth
     restart: unless-stopped
 
 volumes:
