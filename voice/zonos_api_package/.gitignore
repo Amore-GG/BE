@@ -34,7 +34,7 @@ generated_audio/*.mp3
 .env
 .env.local
 
-# 로그
+
 *.log
 
 # Huggingface 캐시
