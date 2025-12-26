@@ -11,6 +11,7 @@ requests
 torch==2.2.1
 torchvision==0.17.1
 torchaudio==2.2.1
+soundfile
 # 모델 및 데이터 유틸
 safetensors
 huggingface_hub
