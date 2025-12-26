@@ -95,10 +95,10 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             set -e
-            cd ${{ secrets.SERVER_PATH }}
+            cd /home/ubuntu/amore-ai
 
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
 
             docker image prune -f
             echo "Deployment completed at $(date)"
