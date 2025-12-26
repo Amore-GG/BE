@@ -8,7 +8,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
         build-essential \
-        libsndfile1 && \
+        libsndfile1 \
+        espeak-ng && \
     curl https://sh.rustup.rs -sSf | sh -s -- -y && \
     apt-get purge -y curl && \
     apt-get autoremove -y && \
