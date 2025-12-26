@@ -81,7 +81,7 @@ async def startup_event():
     model = Zonos.from_pretrained("Zyphra/Zonos-v0.1-transformer", device=device)
 
     # 기본 화자 임베딩 로드 (있는 경우)
-    default_speaker_path = "assets/Ref_IU_Original_Voice.mp3"
+    default_speaker_path = "assets/Ref_IU_Original_Voice.wav"
     if os.path.exists(default_speaker_path):
         wav, sampling_rate = torchaudio.load(default_speaker_path)
         default_speaker = model.make_speaker_embedding(wav, sampling_rate)
