@@ -1,13 +1,20 @@
+# 체크포인트/모델 파일
 checkpoints/
-generated_audio/
-.git/
-__pycache__/
 *.pt
 *.pth
 *.safetensors
-*.mp3
-*.wav
+
+# 생성된 파일
+generated_audio/
+
+# 캐시/임시
+.git/
+__pycache__/
+
+# 미디어 (기본 화자는 포함!)
 *.mp4
 *.avi
 *.webm
-assets/
+
+# assets 폴더는 포함 (기본 화자 음성 필요)
+# assets/  ← 주석 처리 또는 삭제
