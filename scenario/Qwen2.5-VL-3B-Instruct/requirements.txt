@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+transformers>=4.45.0
+accelerate
+safetensors
+huggingface_hub
+pillow
+torch
+torchvision
+qwen-vl-utils
+python-multipart

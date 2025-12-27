@@ -28,7 +28,21 @@ services:
       - /home/ubuntu/amore-ai/lip/face_detection/detection/sfd/s3fd.pth:/app/face_detection/detection/sfd/s3fd.pth
     restart: unless-stopped
 
+  elevenlabs-api:
+    image: ghcr.io/amore-gg/amore-ai-elevenlabs:latest
+    container_name: elevenlabs-api
+    ports:
+      - "1100:1100"
+    environment:
+      - ENV=prod
+      - PYTHONUNBUFFERED=1
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+    volumes:
+      - elevenlabs_output:/app/generated_audio
+    restart: unless-stopped
+
 volumes:
   voice_output:
   lip_output:
   lip_uploads:
+  elevenlabs_output:

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ElevenLabs TTS</title>
+</head>
+<body>
+  <h2>ElevenLabs TTS 테스트</h2>
+
+  <input id="text" value="안녕하세요 ElevenLabs 입니다" size="40">
+  <button onclick="play()">재생</button>
+
+  <script>
+    async function play() {
+      const text = document.getElementById("text").value;
+      const res = await fetch(`/tts?text=${encodeURIComponent(text)}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      new Audio(url).play();
+    }
+  </script>
+</body>
+</html>

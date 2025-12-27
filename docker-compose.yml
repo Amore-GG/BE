@@ -30,7 +30,23 @@ services:
       - lip_uploads:/app/uploads
     restart: unless-stopped
 
+  elevenlabs-api:
+    build:
+      context: ./voice/eleven_labs
+      dockerfile: Dockerfile
+    container_name: elevenlabs-api-dev
+    ports:
+      - "1100:1100"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+    volumes:
+      - elevenlabs_output:/app/generated_audio
+    restart: unless-stopped
+
 volumes:
   voice_output:
   lip_output:
   lip_uploads:
+  elevenlabs_output:

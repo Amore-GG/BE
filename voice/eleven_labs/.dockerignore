@@ -1,0 +1,30 @@
+# 캐시
+__pycache__/
+*.pyc
+*.pyo
+
+# Git
+.git/
+
+# 환경 파일
+.env
+.env.local
+
+# 생성된 파일
+generated_audio/*
+!generated_audio/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# 가상환경
+venv/
+env/
+.venv/
+
+# Scripts (빌드 불필요)
+scripts/
+
