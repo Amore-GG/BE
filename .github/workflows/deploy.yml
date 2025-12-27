@@ -2,7 +2,7 @@ name: Build and Deploy AI Services (Initial)
 
 on:
   push:
-    branches: [ feat/lip+voice ]
+    branches: [ feat/deploy ]
   workflow_dispatch:
 
 permissions:
