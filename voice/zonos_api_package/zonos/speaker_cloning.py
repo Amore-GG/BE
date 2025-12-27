@@ -356,10 +356,12 @@ class ECAPA_TDNN(nn.Module):
 class SpeakerEmbedding(nn.Module):
     def __init__(self, ckpt_path: str = "ResNet293_SimAM_ASP_base.pt", device: str = DEFAULT_DEVICE):
         super().__init__()
+        # GPU 사용 가능하면 cuda, 아니면 cpu
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.device = device
         with torch.device(device):
             self.model = ResNet293_based()
-            state_dict = torch.load(ckpt_path, weights_only=True, mmap=True, map_location="cpu")
+            state_dict = torch.load(ckpt_path, weights_only=True, mmap=True, map_location=device)
             self.model.load_state_dict(state_dict)
             self.model.featCal = logFbankCal()
 
@@ -397,10 +399,12 @@ class SpeakerEmbeddingLDA(nn.Module):
             filename="ResNet293_SimAM_ASP_base_LDA-128.pt",
         )
 
+        # GPU 사용 가능하면 cuda, 아니면 cpu
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.device = device
         with torch.device(device):
             self.model = SpeakerEmbedding(spk_model_path, device)
-            lda_sd = torch.load(lda_spk_model_path, weights_only=True)
+            lda_sd = torch.load(lda_spk_model_path, weights_only=True, map_location=device)
             out_features, in_features = lda_sd["weight"].shape
             self.lda = nn.Linear(in_features, out_features, bias=True, dtype=torch.float32)
             self.lda.load_state_dict(lda_sd)

@@ -175,7 +175,7 @@ detector = face_detection.FaceAlignment(face_detection.LandmarksType._2D,
 
 def _load(checkpoint_path):
 	if device == 'cuda':
-		checkpoint = torch.load(checkpoint_path)
+		checkpoint = torch.load(checkpoint_path, map_location="cpu")
 	else:
 		checkpoint = torch.load(checkpoint_path,
 								map_location=lambda storage, loc: storage)

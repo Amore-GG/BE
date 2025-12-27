@@ -365,7 +365,7 @@ def save_checkpoint(model, optimizer, step, checkpoint_dir, epoch, prefix=''):
 
 def _load(checkpoint_path):
     if use_cuda:
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, map_location="cpu")
     else:
         checkpoint = torch.load(checkpoint_path,
                                 map_location=lambda storage, loc: storage)
