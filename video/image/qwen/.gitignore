@@ -1,0 +1,29 @@
+# 가상환경
+venv/
+env/
+.venv/
+
+# Python 캐시
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 환경 파일
+.env
+.env.local
+
+# 생성된 파일
+uploads/*
+outputs/*
+!uploads/.gitkeep
+!outputs/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# 로그
+*.log
+

@@ -1,0 +1,541 @@
+{
+  "6": {
+    "inputs": {
+      "text": "he character introduces the new AmorePacific cosmetics Mamonde product in hand.",
+      "clip": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+      "clip": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "38": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "CLIP 로드"
+    }
+  },
+  "39": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "VAE 로드"
+    }
+  },
+  "54": {
+    "inputs": {
+      "shift": 8.000000000000002,
+      "model": [
+        "204",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "모델 샘플링 (SD3)"
+    }
+  },
+  "55": {
+    "inputs": {
+      "shift": 8,
+      "model": [
+        "205",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "모델 샘플링 (SD3)"
+    }
+  },
+  "57": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 1125899906842624,
+      "steps": [
+        "179",
+        0
+      ],
+      "cfg": [
+        "177",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 0,
+      "end_at_step": [
+        "113",
+        0
+      ],
+      "return_with_leftover_noise": "enable",
+      "model": [
+        "54",
+        0
+      ],
+      "positive": [
+        "63",
+        0
+      ],
+      "negative": [
+        "63",
+        1
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "고급 KSampler"
+    }
+  },
+  "58": {
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": 0,
+      "steps": [
+        "179",
+        0
+      ],
+      "cfg": [
+        "177",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": [
+        "113",
+        0
+      ],
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": [
+        "55",
+        0
+      ],
+      "positive": [
+        "63",
+        0
+      ],
+      "negative": [
+        "63",
+        1
+      ],
+      "latent_image": [
+        "57",
+        0
+      ]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": {
+      "title": "고급 KSampler"
+    }
+  },
+  "63": {
+    "inputs": {
+      "width": [
+        "213",
+        0
+      ],
+      "height": [
+        "214",
+        0
+      ],
+      "length": [
+        "212",
+        0
+      ],
+      "batch_size": 1,
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "start_image": [
+        "67",
+        0
+      ]
+    },
+    "class_type": "WanImageToVideo",
+    "_meta": {
+      "title": "WAN 비디오 생성 (이미지 → 비디오)"
+    }
+  },
+  "67": {
+    "inputs": {
+      "width": [
+        "213",
+        0
+      ],
+      "height": [
+        "214",
+        0
+      ],
+      "upscale_method": "nearest-exact",
+      "keep_proportion": "resize",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 1,
+      "device": "cpu",
+      "image": [
+        "172",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "68": {
+    "inputs": {
+      "frame_rate": 20,
+      "loop_count": 0,
+      "filename_prefix": "video/14B",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "224",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "78": {
+    "inputs": {
+      "lora_name": "wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors",
+      "strength_model": 1,
+      "model": [
+        "210",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA 로드 (모델 전용)"
+    }
+  },
+  "81": {
+    "inputs": {
+      "images": [
+        "67",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "이미지 미리보기"
+    }
+  },
+  "82": {
+    "inputs": {
+      "samples": [
+        "57",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE 디코드"
+    }
+  },
+  "83": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "AnimateDiff",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": false,
+      "images": [
+        "82",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "103": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "123",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "104": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "78",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "113": {
+    "inputs": {
+      "expression": "a*b/100",
+      "a": [
+        "179",
+        0
+      ],
+      "b": [
+        "211",
+        0
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "Math Expression 🐍"
+    }
+  },
+  "123": {
+    "inputs": {
+      "lora_name": "wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors",
+      "strength_model": 1.5000000000000002,
+      "model": [
+        "209",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA 로드 (모델 전용)"
+    }
+  },
+  "172": {
+    "inputs": {
+      "image": "아모레 성수 헤라 센슈얼.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "이미지 로드"
+    }
+  },
+  "177": {
+    "inputs": {
+      "value": 1.0000000000000002
+    },
+    "class_type": "easy float",
+    "_meta": {
+      "title": "Float - CFG"
+    }
+  },
+  "179": {
+    "inputs": {
+      "value": 8
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "Int - Steps"
+    }
+  },
+  "194": {
+    "inputs": {
+      "+ve": [
+        "63",
+        0
+      ],
+      "-ve": [
+        "63",
+        1
+      ]
+    },
+    "class_type": "Prompts Everywhere",
+    "_meta": {
+      "title": "Anything Everywhere Prompts"
+    }
+  },
+  "195": {
+    "inputs": {
+      "anything": [
+        "39",
+        0
+      ]
+    },
+    "class_type": "Anything Everywhere",
+    "_meta": {
+      "title": "Anything Everywhere"
+    }
+  },
+  "202": {
+    "inputs": {
+      "anything": [
+        "63",
+        2
+      ]
+    },
+    "class_type": "Anything Everywhere",
+    "_meta": {
+      "title": "Anything Everywhere"
+    }
+  },
+  "204": {
+    "inputs": {
+      "enable_fp16_accumulation": true,
+      "model": [
+        "103",
+        0
+      ]
+    },
+    "class_type": "ModelPatchTorchSettings",
+    "_meta": {
+      "title": "Model Patch Torch Settings"
+    }
+  },
+  "205": {
+    "inputs": {
+      "enable_fp16_accumulation": true,
+      "model": [
+        "104",
+        0
+      ]
+    },
+    "class_type": "ModelPatchTorchSettings",
+    "_meta": {
+      "title": "Model Patch Torch Settings"
+    }
+  },
+  "209": {
+    "inputs": {
+      "unet_name": "wan2.2_i2v_high_noise_14B_Q5_K_S.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "210": {
+    "inputs": {
+      "unet_name": "wan2.2_i2v_low_noise_14B_Q5_K_S.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "211": {
+    "inputs": {
+      "value": 50
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "Int - Ratio"
+    }
+  },
+  "212": {
+    "inputs": {
+      "value": 121
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "Int - Length"
+    }
+  },
+  "213": {
+    "inputs": {
+      "value": 512
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "Int - Width"
+    }
+  },
+  "214": {
+    "inputs": {
+      "value": 512
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "Int - Height"
+    }
+  },
+  "224": {
+    "inputs": {
+      "tile_size": 480,
+      "overlap": 64,
+      "temporal_size": 64,
+      "temporal_overlap": 8,
+      "samples": [
+        "58",
+        0
+      ]
+    },
+    "class_type": "VAEDecodeTiled",
+    "_meta": {
+      "title": "VAE 디코드 (타일)"
+    }
+  },
+  "230": {
+    "inputs": {
+      "anything": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "Clean VRAM Used"
+    }
+  },
+  "231": {
+    "inputs": {
+      "anything": [
+        "230",
+        0
+      ]
+    },
+    "class_type": "easy clearCacheAll",
+    "_meta": {
+      "title": "Clear Cache All"
+    }
+  }
+}
