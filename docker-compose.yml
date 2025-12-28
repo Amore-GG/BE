@@ -45,8 +45,26 @@ services:
       - elevenlabs_output:/app/generated_audio
     restart: unless-stopped
 
+  qwen-edit-api:
+    build:
+      context: ./video/image/qwen
+      dockerfile: Dockerfile
+    container_name: qwen-edit-api-dev
+    ports:
+      - "4100:4100"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8188}
+    volumes:
+      - qwen_uploads:/app/uploads
+      - qwen_outputs:/app/outputs
+    restart: unless-stopped
+
 volumes:
   voice_output:
   lip_output:
   lip_uploads:
   elevenlabs_output:
+  qwen_uploads:
+  qwen_outputs:

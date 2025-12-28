@@ -41,8 +41,24 @@ services:
       - elevenlabs_output:/app/generated_audio
     restart: unless-stopped
 
+  qwen-edit-api:
+    image: ghcr.io/amore-gg/amore-ai-qwen-edit:latest
+    container_name: qwen-edit-api
+    ports:
+      - "4100:4100"
+    environment:
+      - ENV=prod
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL}
+    volumes:
+      - qwen_uploads:/app/uploads
+      - qwen_outputs:/app/outputs
+    restart: unless-stopped
+
 volumes:
   voice_output:
   lip_output:
   lip_uploads:
   elevenlabs_output:
+  qwen_uploads:
+  qwen_outputs:

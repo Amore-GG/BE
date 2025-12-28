@@ -20,11 +20,11 @@ class FaceDetector(object):
         self.verbose = verbose
 
         if verbose:
-            if 'cpu' in device:
+            if 'cpu' in str(device):
                 logger = logging.getLogger(__name__)
                 logger.warning("Detection running on CPU, this may be potentially slow.")
 
-        if 'cpu' not in device and 'cuda' not in device:
+        if 'cpu' not in str(device) and 'cuda' not in str(device):
             if verbose:
                 logger.error("Expected values for device are: {cpu, cuda} but got: %s", device)
             raise ValueError

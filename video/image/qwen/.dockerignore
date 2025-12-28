@@ -1,29 +1,31 @@
-# 캐시
+# Python
 __pycache__/
-*.pyc
-*.pyo
-
-# Git
-.git/
-
-# 환경 파일
-.env
-.env.local
-
-# 생성된 파일
-uploads/*
-outputs/*
-!uploads/.gitkeep
-!outputs/.gitkeep
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
 
 # IDE
 .idea/
 .vscode/
 *.swp
-.DS_Store
+*.swo
 
-# 가상환경
-venv/
-env/
-.venv/
+# Git
+.git/
+.gitignore
 
+# 생성된 파일 (빌드 시 제외)
+uploads/
+outputs/
+
+# 테스트
+tests/
+*.test.py
+
+# 문서
+*.md
+LICENSE
