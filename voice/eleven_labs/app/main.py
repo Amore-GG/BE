@@ -13,8 +13,11 @@ from pydantic import BaseModel
 from elevenlabs.client import ElevenLabs
 from elevenlabs.types import VoiceSettings
 import os
+import time
+import asyncio
 from datetime import datetime
 from typing import Optional
+from pathlib import Path
 import io
 
 app = FastAPI(
@@ -41,9 +44,48 @@ MODEL_ID = os.environ.get("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5")
 OUTPUT_DIR = "generated_audio"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+# 파일 자동 삭제 설정 (시간 단위)
+FILE_MAX_AGE_HOURS = 1
+
+
+def cleanup_old_files(directory: str, max_age_hours: int = FILE_MAX_AGE_HOURS):
+    """오래된 파일 삭제"""
+    now = time.time()
+    deleted_count = 0
+    for file in Path(directory).glob("*"):
+        if file.is_file() and file.suffix in ['.wav', '.mp3']:
+            age_hours = (now - file.stat().st_mtime) / 3600
+            if age_hours > max_age_hours:
+                try:
+                    file.unlink()
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"파일 삭제 실패 {file}: {e}")
+    if deleted_count > 0:
+        print(f"[Cleanup] {deleted_count}개 오래된 파일 삭제됨")
+
+
+async def periodic_cleanup():
+    """주기적으로 오래된 파일 삭제 (30분마다)"""
+    while True:
+        await asyncio.sleep(1800)  # 30분
+        cleanup_old_files(OUTPUT_DIR)
+
+
 # Static 파일 서빙
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """서버 시작 시 초기화"""
+    # 시작 시 오래된 파일 정리
+    cleanup_old_files(OUTPUT_DIR)
+    
+    # 백그라운드 정리 태스크 시작
+    asyncio.create_task(periodic_cleanup())
+    print(f"[Cleanup] 자동 파일 정리 활성화 ({FILE_MAX_AGE_HOURS}시간 이상 파일 삭제)")
 
 
 class TTSRequest(BaseModel):

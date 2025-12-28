@@ -9,6 +9,7 @@ import os
 import uuid
 import time
 import asyncio
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -228,7 +229,9 @@ async def generate_speech(request: TTSRequest):
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"음성 생성 실패: {str(e)}")
+        error_detail = traceback.format_exc()
+        print(f"[ERROR] 음성 생성 실패:\n{error_detail}")
+        raise HTTPException(status_code=500, detail=f"음성 생성 실패: {str(e)}\n{error_detail}")
 
 
 @app.get("/audio/{filename}")

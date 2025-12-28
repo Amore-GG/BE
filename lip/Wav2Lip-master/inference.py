@@ -163,7 +163,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('Using {} for inference.'.format(device))
 
 def _load(checkpoint_path):
-checkpoint = torch.load(checkpoint_path, map_location=device)
+	checkpoint = torch.load(checkpoint_path, map_location=device)
 	return checkpoint
 
 def load_model(path):
