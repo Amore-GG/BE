@@ -114,9 +114,9 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ----------------------------
-  # 4) Qwen Image Edit 이미지 빌드 & 푸시
+  # 4) Video Qwen 이미지 빌드 & 푸시
   # ----------------------------
-  build-qwen-edit:
+  build-video-qwen:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -135,14 +135,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Push (qwen-edit)
+      - name: Build & Push (video-qwen)
         uses: docker/build-push-action@v5
         with:
           context: ./video/image/qwen
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-qwen-edit:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-qwen-edit:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-qwen:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-qwen:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -150,7 +150,7 @@ jobs:
   # 5) EC2 배포
   # ----------------------------
   deploy:
-    needs: [build-voice, build-lip, build-elevenlabs, build-qwen-edit]
+    needs: [build-voice, build-lip, build-elevenlabs, build-video-qwen]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to EC2 (docker compose pull & up)

@@ -183,8 +183,18 @@ async def generate_speech(request: TTSRequest):
                 detail="화자 임베딩이 없습니다. speaker_audio_path를 제공하거나 기본 화자를 설정하세요."
             )
 
-        # 기본 감정 벡터 (중립)
-        emotion = request.emotion or [0.3077, 0.0256, 0.0256, 0.0256, 0.0256, 0.0256, 0.2564, 0.3077]
+        # 기본 감정 벡터 (중립) - 반드시 8개 값이어야 함
+        default_emotion = [0.3077, 0.0256, 0.0256, 0.0256, 0.0256, 0.0256, 0.2564, 0.3077]
+        
+        # emotion 검증: None이거나 8개가 아니면 기본값 사용
+        if request.emotion is None or len(request.emotion) != 8:
+            emotion = default_emotion
+            if request.emotion is not None:
+                print(f"[WARNING] emotion 길이가 {len(request.emotion)}개입니다. 8개여야 합니다. 기본값 사용.")
+        else:
+            emotion = request.emotion
+        
+        print(f"[DEBUG] emotion 값: {emotion} (길이: {len(emotion)})")
 
         # 디버깅: speaker embedding 정보 출력
         print(f"[DEBUG] Speaker shape: {speaker.shape if speaker is not None else None}")

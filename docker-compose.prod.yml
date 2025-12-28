@@ -41,9 +41,9 @@ services:
       - elevenlabs_output:/app/generated_audio
     restart: unless-stopped
 
-  qwen-edit-api:
-    image: ghcr.io/amore-gg/amore-ai-qwen-edit:latest
-    container_name: qwen-edit-api
+  video-qwen-api:
+    image: ghcr.io/amore-gg/amore-ai-video-qwen:latest
+    container_name: video-qwen-api
     ports:
       - "4100:4100"
     environment:

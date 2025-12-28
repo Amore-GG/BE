@@ -45,11 +45,11 @@ services:
       - elevenlabs_output:/app/generated_audio
     restart: unless-stopped
 
-  qwen-edit-api:
+  video-qwen-api:
     build:
       context: ./video/image/qwen
       dockerfile: Dockerfile
-    container_name: qwen-edit-api-dev
+    container_name: video-qwen-api-dev
     ports:
       - "4100:4100"
     environment:

@@ -167,9 +167,17 @@ def _load(checkpoint_path):
 	return checkpoint
 
 def load_model(path):
-	model = Wav2Lip()
 	print("Load checkpoint from: {}".format(path))
 	checkpoint = _load(path)
+	
+	# TorchScript 모델인 경우 (ScriptModule)
+	if hasattr(checkpoint, 'forward'):
+		print("TorchScript 모델 감지됨")
+		model = checkpoint.to(device)
+		return model.eval()
+	
+	# 일반 체크포인트인 경우 (딕셔너리)
+	model = Wav2Lip()
 	s = checkpoint["state_dict"]
 	new_s = {}
 	for k, v in s.items():
