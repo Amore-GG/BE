@@ -115,7 +115,11 @@ async def startup_event():
     default_speaker_path = "assets/Ref_IU_Original_Voice.wav"
     if os.path.exists(default_speaker_path):
         wav, sampling_rate = torchaudio.load(default_speaker_path)
+        print(f"[DEBUG] WAV shape: {wav.shape}, sample_rate: {sampling_rate}")
         default_speaker = model.make_speaker_embedding(wav, sampling_rate)
+        print(f"[DEBUG] Default speaker shape: {default_speaker.shape}")
+        print(f"[DEBUG] Default speaker dtype: {default_speaker.dtype}")
+        print(f"[DEBUG] Default speaker device: {default_speaker.device}")
         print(f"기본 화자 임베딩 로드 완료: {default_speaker_path}")
 
     print("모델 로딩 완료!")
@@ -182,7 +186,13 @@ async def generate_speech(request: TTSRequest):
         # 기본 감정 벡터 (중립)
         emotion = request.emotion or [0.3077, 0.0256, 0.0256, 0.0256, 0.0256, 0.0256, 0.2564, 0.3077]
 
-        # 조건 딕셔너리 생성
+        # 디버깅: speaker embedding 정보 출력
+        print(f"[DEBUG] Speaker shape: {speaker.shape if speaker is not None else None}")
+        print(f"[DEBUG] Speaker dtype: {speaker.dtype if speaker is not None else None}")
+        print(f"[DEBUG] Speaker device: {speaker.device if speaker is not None else None}")
+        print(f"[DEBUG] Model device: {device}")
+
+        # 조건 딕셔너리 생성 (명시적으로 device 전달)
         cond_dict = make_cond_dict(
             text=request.text,
             speaker=speaker,
@@ -191,7 +201,13 @@ async def generate_speech(request: TTSRequest):
             fmax=request.fmax,
             pitch_std=request.pitch_std,
             speaking_rate=request.speaking_rate,
+            device=device,
         )
+
+        # 디버깅: cond_dict 키와 shape 출력
+        for k, v in cond_dict.items():
+            if isinstance(v, torch.Tensor):
+                print(f"[DEBUG] cond_dict[{k}]: shape={v.shape}, dtype={v.dtype}, device={v.device}")
 
         # 조건 준비
         conditioning = model.prepare_conditioning(cond_dict)

@@ -316,7 +316,18 @@ class PrefixConditioner(Conditioner):
             raise ValueError(f"Missing required keys: {self.required_keys - set(cond_dict)}")
         conds = []
         for conditioner in self.conditioners:
-            conds.append(conditioner(cond_dict.get(conditioner.name)))
+            try:
+                value = cond_dict.get(conditioner.name)
+                if isinstance(value, torch.Tensor):
+                    print(f"[DEBUG] Conditioner '{conditioner.name}': input_shape={value.shape}")
+                conds.append(conditioner(value))
+            except AssertionError as e:
+                value = cond_dict.get(conditioner.name)
+                shape_info = value.shape if isinstance(value, torch.Tensor) else type(value)
+                expected_dim = getattr(conditioner, 'input_dim', getattr(conditioner, 'cond_dim', 'unknown'))
+                print(f"[ERROR] Conditioner '{conditioner.name}' failed!")
+                print(f"[ERROR] Input shape: {shape_info}, Expected dim: {expected_dim}")
+                raise
         max_bsz = max(map(len, conds))
         assert all(c.shape[0] in (max_bsz, 1) for c in conds)
         conds = [c.expand(max_bsz, -1, -1) for c in conds]
