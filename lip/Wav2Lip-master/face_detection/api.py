@@ -53,7 +53,7 @@ class FaceAlignment:
 
         network_size = int(network_size)
 
-        if 'cuda' in device:
+        if 'cuda' in str(device):
             torch.backends.cudnn.benchmark = True
 
         # Get the face detector

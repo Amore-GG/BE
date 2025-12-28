@@ -354,10 +354,8 @@ class ECAPA_TDNN(nn.Module):
 
 
 class SpeakerEmbedding(nn.Module):
-    def __init__(self, ckpt_path: str = "ResNet293_SimAM_ASP_base.pt", device: str = DEFAULT_DEVICE):
+    def __init__(self, ckpt_path: str = "ResNet293_SimAM_ASP_base.pt", device = DEFAULT_DEVICE):
         super().__init__()
-        # GPU 사용 가능하면 cuda, 아니면 cpu
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.device = device
         with torch.device(device):
             self.model = ResNet293_based()
@@ -388,7 +386,7 @@ class SpeakerEmbedding(nn.Module):
 
 
 class SpeakerEmbeddingLDA(nn.Module):
-    def __init__(self, device: str = DEFAULT_DEVICE):
+    def __init__(self, device = DEFAULT_DEVICE):
         super().__init__()
         spk_model_path = hf_hub_download(
             repo_id="Zyphra/Zonos-v0.1-speaker-embedding",
@@ -399,8 +397,6 @@ class SpeakerEmbeddingLDA(nn.Module):
             filename="ResNet293_SimAM_ASP_base_LDA-128.pt",
         )
 
-        # GPU 사용 가능하면 cuda, 아니면 cpu
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.device = device
         with torch.device(device):
             self.model = SpeakerEmbedding(spk_model_path, device)
