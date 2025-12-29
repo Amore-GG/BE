@@ -1,6 +1,6 @@
 """
-Qwen Image Edit API
-ComfyUI를 통한 이미지 편집 API
+Wan2.1 Image-to-Video API
+ComfyUI를 통한 이미지 → 영상 생성 API
 """
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
@@ -20,8 +20,8 @@ from comfyui_client import ComfyUIClient
 
 # FastAPI 앱 초기화
 app = FastAPI(
-    title="Qwen Image Edit API",
-    description="ComfyUI 기반 이미지 편집 API",
+    title="Wan2 Image-to-Video API",
+    description="ComfyUI 기반 이미지 → 비디오 생성 API (Wan2.1 14B)",
     version="1.0.0"
 )
 
@@ -36,7 +36,7 @@ app.add_middleware(
 
 # 환경변수
 COMFYUI_URL = os.getenv("COMFYUI_URL", "http://localhost:8000")
-WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/image_edit.json")
+WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/i2v.json")
 
 # 디렉토리 설정
 UPLOAD_DIR = "uploads"
@@ -79,15 +79,19 @@ async def periodic_cleanup():
         cleanup_old_files(UPLOAD_DIR)
 
 
-class ImageEditRequest(BaseModel):
-    """이미지 편집 요청 (JSON Body용)"""
-    prompt: str = Field(..., description="편집 프롬프트")
-    image1_filename: str = Field(..., description="첫 번째 이미지 파일명 (업로드된)")
-    image2_filename: Optional[str] = Field(None, description="두 번째 이미지 파일명 (선택)")
+class I2VRequest(BaseModel):
+    """이미지 → 비디오 요청 (JSON Body용)"""
+    prompt: str = Field(..., description="영상 생성 프롬프트")
+    image_filename: str = Field(..., description="입력 이미지 파일명 (업로드된)")
+    width: Optional[int] = Field(512, description="영상 너비 (기본: 512)")
+    height: Optional[int] = Field(512, description="영상 높이 (기본: 512)")
+    length: Optional[int] = Field(121, description="프레임 수 (기본: 121, 약 6초)")
+    steps: Optional[int] = Field(8, description="샘플링 스텝 (기본: 8)")
+    cfg: Optional[float] = Field(1.0, description="CFG 스케일 (기본: 1.0)")
 
 
-class ImageEditResponse(BaseModel):
-    """이미지 편집 응답"""
+class I2VResponse(BaseModel):
+    """이미지 → 비디오 응답"""
     success: bool
     output_file: str
     message: str
@@ -104,7 +108,7 @@ class UploadResponse(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     """서버 시작 시 초기화"""
-    print(f"Qwen Image Edit API 시작...")
+    print(f"Wan2 Image-to-Video API 시작...")
     print(f"ComfyUI URL: {COMFYUI_URL}")
     print(f"Workflow Path: {WORKFLOW_PATH}")
     
@@ -127,13 +131,14 @@ async def startup_event():
 async def root():
     """API 루트"""
     return {
-        "message": "Qwen Image Edit API",
+        "message": "Wan2 Image-to-Video API",
         "version": "1.0.0",
+        "description": "이미지를 입력받아 영상을 생성합니다 (Wan2.1 14B 모델)",
         "endpoints": {
             "POST /upload": "이미지 업로드",
-            "POST /edit": "이미지 편집 (Form-data)",
-            "POST /edit/json": "이미지 편집 (JSON)",
-            "GET /output/{filename}": "결과 이미지 다운로드",
+            "POST /generate": "영상 생성 (Form-data)",
+            "POST /generate/json": "영상 생성 (JSON)",
+            "GET /output/{filename}": "결과 영상 다운로드",
             "GET /health": "헬스 체크"
         }
     }
@@ -194,18 +199,26 @@ async def upload_image(
         raise HTTPException(status_code=500, detail=f"업로드 실패: {str(e)}")
 
 
-@app.post("/edit", response_model=ImageEditResponse)
-async def edit_image_form(
-    image1: UploadFile = File(..., description="첫 번째 이미지 (캐릭터/배경)"),
-    image2: UploadFile = File(default=None, description="두 번째 이미지 (제품/오브젝트)"),
-    prompt: str = Form(..., description="편집 프롬프트"),
+@app.post("/generate", response_model=I2VResponse)
+async def generate_video_form(
+    image: UploadFile = File(..., description="입력 이미지"),
+    prompt: str = Form(..., description="영상 생성 프롬프트"),
+    width: Optional[int] = Form(512, description="영상 너비"),
+    height: Optional[int] = Form(512, description="영상 높이"),
+    length: Optional[int] = Form(121, description="프레임 수 (약 6초)"),
+    steps: Optional[int] = Form(8, description="샘플링 스텝"),
+    cfg: Optional[float] = Form(1.0, description="CFG 스케일"),
 ):
     """
-    이미지 편집 (Form-data)
+    이미지 → 비디오 생성 (Form-data)
     
-    - **image1**: 첫 번째 이미지 (필수)
-    - **image2**: 두 번째 이미지 (선택, 합성용)
-    - **prompt**: 편집 프롬프트
+    - **image**: 입력 이미지 (필수)
+    - **prompt**: 영상 생성 프롬프트 (예: "The character walks forward slowly")
+    - **width**: 영상 너비 (기본: 512)
+    - **height**: 영상 높이 (기본: 512)
+    - **length**: 프레임 수 (기본: 121, 약 6초 @ 20fps)
+    - **steps**: 샘플링 스텝 (기본: 8, 높을수록 품질↑ 속도↓)
+    - **cfg**: CFG 스케일 (기본: 1.0)
     """
     start_time = time.time()
     
@@ -219,80 +232,77 @@ async def edit_image_form(
         # 이미지 저장 및 업로드
         unique_id = str(uuid.uuid4())[:8]
         
-        # Image 1
-        ext1 = os.path.splitext(image1.filename)[1] or ".png"
-        image1_filename = f"edit_{unique_id}_1{ext1}"
-        image1_path = os.path.join(UPLOAD_DIR, image1_filename)
-        with open(image1_path, "wb") as f:
-            f.write(await image1.read())
+        ext = os.path.splitext(image.filename)[1] or ".png"
+        image_filename = f"i2v_{unique_id}{ext}"
+        image_path = os.path.join(UPLOAD_DIR, image_filename)
+        with open(image_path, "wb") as f:
+            f.write(await image.read())
         
-        await client.upload_image(image1_path, image1_filename)
-        
-        # Image 2 (선택)
-        image2_filename = None
-        if image2 and image2.filename:
-            ext2 = os.path.splitext(image2.filename)[1] or ".png"
-            image2_filename = f"edit_{unique_id}_2{ext2}"
-            image2_path = os.path.join(UPLOAD_DIR, image2_filename)
-            with open(image2_path, "wb") as f:
-                f.write(await image2.read())
-            
-            await client.upload_image(image2_path, image2_filename)
+        await client.upload_image(image_path, image_filename)
         
         # 워크플로우 업데이트
-        workflow = client.update_workflow_images(workflow, image1_filename, image2_filename)
-        workflow = client.update_workflow_prompt(workflow, prompt)
+        workflow = client.update_i2v_workflow(
+            workflow,
+            image_filename=image_filename,
+            prompt=prompt,
+            width=width,
+            height=height,
+            length=length,
+            steps=steps,
+            cfg=cfg
+        )
         
-        # 실행
-        result = await client.execute_workflow(workflow, timeout=600)
+        # 실행 (영상 생성은 오래 걸림 - 타임아웃 30분)
+        result = await client.execute_workflow(workflow, timeout=1800)
         
-        # 결과 이미지 가져오기
+        # 결과 비디오 가져오기
         outputs = result.get("outputs", {})
-        output_images = []
+        output_videos = []
         
         for node_id, node_output in outputs.items():
-            if "images" in node_output:
-                for img in node_output["images"]:
-                    output_images.append(img)
+            # VHS_VideoCombine 노드의 출력
+            if "gifs" in node_output:
+                for vid in node_output["gifs"]:
+                    output_videos.append(vid)
         
-        if not output_images:
-            raise HTTPException(status_code=500, detail="출력 이미지가 없습니다")
+        if not output_videos:
+            raise HTTPException(status_code=500, detail="출력 비디오가 없습니다")
         
-        # 첫 번째 출력 이미지 저장
-        img_info = output_images[0]
-        img_bytes = await client.get_image(
-            img_info["filename"],
-            img_info.get("subfolder", ""),
-            img_info.get("type", "output")
+        # 첫 번째 출력 비디오 저장
+        vid_info = output_videos[0]
+        vid_bytes = await client.get_video(
+            vid_info["filename"],
+            vid_info.get("subfolder", ""),
+            vid_info.get("type", "output")
         )
         
         # 로컬에 저장
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_filename = f"edit_{timestamp}_{unique_id}.png"
+        output_filename = f"i2v_{timestamp}_{unique_id}.mp4"
         output_path = os.path.join(OUTPUT_DIR, output_filename)
         
         with open(output_path, "wb") as f:
-            f.write(img_bytes)
+            f.write(vid_bytes)
         
         processing_time = time.time() - start_time
         
-        return ImageEditResponse(
+        return I2VResponse(
             success=True,
             output_file=output_filename,
-            message="이미지 편집 완료",
+            message="영상 생성 완료",
             processing_time=round(processing_time, 2)
         )
     
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"이미지 편집 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"영상 생성 실패: {str(e)}")
 
 
-@app.post("/edit/json", response_model=ImageEditResponse)
-async def edit_image_json(request: ImageEditRequest):
+@app.post("/generate/json", response_model=I2VResponse)
+async def generate_video_json(request: I2VRequest):
     """
-    이미지 편집 (JSON) - 미리 업로드된 이미지 사용
+    이미지 → 비디오 생성 (JSON) - 미리 업로드된 이미지 사용
     """
     start_time = time.time()
     
@@ -304,62 +314,66 @@ async def edit_image_json(request: ImageEditRequest):
         workflow = client.load_workflow(WORKFLOW_PATH)
         
         # 워크플로우 업데이트
-        workflow = client.update_workflow_images(
+        workflow = client.update_i2v_workflow(
             workflow,
-            request.image1_filename,
-            request.image2_filename
+            image_filename=request.image_filename,
+            prompt=request.prompt,
+            width=request.width,
+            height=request.height,
+            length=request.length,
+            steps=request.steps,
+            cfg=request.cfg
         )
-        workflow = client.update_workflow_prompt(workflow, request.prompt)
         
         # 실행
-        result = await client.execute_workflow(workflow, timeout=600)
+        result = await client.execute_workflow(workflow, timeout=1800)
         
         # 결과 처리
         outputs = result.get("outputs", {})
-        output_images = []
+        output_videos = []
         
         for node_id, node_output in outputs.items():
-            if "images" in node_output:
-                for img in node_output["images"]:
-                    output_images.append(img)
+            if "gifs" in node_output:
+                for vid in node_output["gifs"]:
+                    output_videos.append(vid)
         
-        if not output_images:
-            raise HTTPException(status_code=500, detail="출력 이미지가 없습니다")
+        if not output_videos:
+            raise HTTPException(status_code=500, detail="출력 비디오가 없습니다")
         
-        # 이미지 저장
-        img_info = output_images[0]
-        img_bytes = await client.get_image(
-            img_info["filename"],
-            img_info.get("subfolder", ""),
-            img_info.get("type", "output")
+        # 비디오 저장
+        vid_info = output_videos[0]
+        vid_bytes = await client.get_video(
+            vid_info["filename"],
+            vid_info.get("subfolder", ""),
+            vid_info.get("type", "output")
         )
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_id = str(uuid.uuid4())[:8]
-        output_filename = f"edit_{timestamp}_{unique_id}.png"
+        output_filename = f"i2v_{timestamp}_{unique_id}.mp4"
         output_path = os.path.join(OUTPUT_DIR, output_filename)
         
         with open(output_path, "wb") as f:
-            f.write(img_bytes)
+            f.write(vid_bytes)
         
         processing_time = time.time() - start_time
         
-        return ImageEditResponse(
+        return I2VResponse(
             success=True,
             output_file=output_filename,
-            message="이미지 편집 완료",
+            message="영상 생성 완료",
             processing_time=round(processing_time, 2)
         )
     
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"이미지 편집 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"영상 생성 실패: {str(e)}")
 
 
 @app.get("/output/{filename}")
 async def get_output(filename: str):
-    """결과 이미지 다운로드"""
+    """결과 영상 다운로드"""
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     if not os.path.exists(filepath):
@@ -367,14 +381,14 @@ async def get_output(filename: str):
     
     return FileResponse(
         filepath,
-        media_type="image/png",
+        media_type="video/mp4",
         filename=filename
     )
 
 
 @app.delete("/output/{filename}")
 async def delete_output(filename: str):
-    """결과 이미지 삭제"""
+    """결과 영상 삭제"""
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     if not os.path.exists(filepath):
@@ -386,13 +400,13 @@ async def delete_output(filename: str):
 
 @app.get("/outputs")
 async def list_outputs():
-    """결과 이미지 목록"""
+    """결과 영상 목록"""
     files = []
     for f in Path(OUTPUT_DIR).glob("*"):
         if f.is_file():
             files.append({
                 "filename": f.name,
-                "size_kb": round(f.stat().st_size / 1024, 2),
+                "size_mb": round(f.stat().st_size / (1024 * 1024), 2),
                 "created": datetime.fromtimestamp(f.stat().st_ctime).isoformat()
             })
     return {"files": files, "count": len(files)}
@@ -400,5 +414,5 @@ async def list_outputs():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=4100)
+    uvicorn.run(app, host="0.0.0.0", port=4200)
 

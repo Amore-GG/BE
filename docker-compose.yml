@@ -55,10 +55,26 @@ services:
     environment:
       - ENV=dev
       - PYTHONUNBUFFERED=1
-      - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8188}
+      - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8000}
     volumes:
       - qwen_uploads:/app/uploads
       - qwen_outputs:/app/outputs
+    restart: unless-stopped
+
+  video-i2v-api:
+    build:
+      context: ./video/i2v/wan2
+      dockerfile: Dockerfile
+    container_name: video-i2v-api-dev
+    ports:
+      - "4200:4200"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8000}
+    volumes:
+      - i2v_uploads:/app/uploads
+      - i2v_outputs:/app/outputs
     restart: unless-stopped
 
 volumes:
@@ -68,3 +84,5 @@ volumes:
   elevenlabs_output:
   qwen_uploads:
   qwen_outputs:
+  i2v_uploads:
+  i2v_outputs:
