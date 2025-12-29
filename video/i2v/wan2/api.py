@@ -255,18 +255,31 @@ async def generate_video_form(
         # 실행 (영상 생성은 오래 걸림 - 타임아웃 30분)
         result = await client.execute_workflow(workflow, timeout=1800)
         
+        # 디버깅: 전체 결과 출력
+        print(f"[Debug] Full result keys: {result.keys()}")
+        print(f"[Debug] Result: {result}")
+        
         # 결과 비디오 가져오기
         outputs = result.get("outputs", {})
+        print(f"[Debug] Outputs: {outputs}")
+        
         output_videos = []
         
         for node_id, node_output in outputs.items():
+            print(f"[Debug] Node {node_id} output keys: {node_output.keys() if isinstance(node_output, dict) else 'not dict'}")
             # VHS_VideoCombine 노드의 출력
             if "gifs" in node_output:
                 for vid in node_output["gifs"]:
                     output_videos.append(vid)
+                    print(f"[Debug] Found video: {vid}")
         
         if not output_videos:
-            raise HTTPException(status_code=500, detail="출력 비디오가 없습니다")
+            # 추가 디버깅: images로 출력되는 경우도 체크
+            for node_id, node_output in outputs.items():
+                if isinstance(node_output, dict):
+                    if "images" in node_output:
+                        print(f"[Debug] Node {node_id} has images: {node_output['images']}")
+            raise HTTPException(status_code=500, detail=f"출력 비디오가 없습니다. outputs: {list(outputs.keys())}")
         
         # 첫 번째 출력 비디오 저장
         vid_info = output_videos[0]
