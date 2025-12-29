@@ -320,7 +320,11 @@ async def generate_video_form(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"영상 생성 실패: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[ERROR] /generate 영상 생성 실패:")
+        print(error_trace)
+        raise HTTPException(status_code=500, detail=f"영상 생성 실패: {str(e) or type(e).__name__}")
 
 
 @app.post("/generate/json", response_model=I2VResponse)
@@ -392,7 +396,11 @@ async def generate_video_json(request: I2VRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"영상 생성 실패: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[ERROR] /generate/json 영상 생성 실패:")
+        print(error_trace)
+        raise HTTPException(status_code=500, detail=f"영상 생성 실패: {str(e) or type(e).__name__}")
 
 
 @app.get("/output/{filename}")

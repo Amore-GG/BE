@@ -36,7 +36,7 @@ class ComfyUIClient:
                 if response.status_code != 200:
                     print(f"[Upload Error] Status: {response.status_code}")
                     print(f"[Upload Error] Response: {response.text}")
-                    response.raise_for_status()
+                    raise Exception(f"ComfyUI 이미지 업로드 실패 (Status {response.status_code}): {response.text}")
                 
                 result = response.json()
                 print(f"[Upload Success] {filename} -> {result}")
@@ -81,8 +81,12 @@ class ComfyUIClient:
                         raise Exception(f"ComfyUI 에러: {error_json['error']}")
                     if "node_errors" in error_json:
                         raise Exception(f"노드 에러: {error_json['node_errors']}")
-                except:
-                    pass
+                except json.JSONDecodeError:
+                    raise Exception(f"ComfyUI 응답 에러 (Status {response.status_code}): {response.text}")
+                except Exception as e:
+                    if "ComfyUI 에러" in str(e) or "노드 에러" in str(e):
+                        raise
+                    raise Exception(f"ComfyUI 에러 (Status {response.status_code}): {response.text}")
                 response.raise_for_status()
             
             result = response.json()

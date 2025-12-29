@@ -286,7 +286,11 @@ async def edit_image_form(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"이미지 편집 실패: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[ERROR] /edit 이미지 편집 실패:")
+        print(error_trace)
+        raise HTTPException(status_code=500, detail=f"이미지 편집 실패: {str(e) or type(e).__name__}")
 
 
 @app.post("/edit/json", response_model=ImageEditResponse)
@@ -354,7 +358,11 @@ async def edit_image_json(request: ImageEditRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"이미지 편집 실패: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[ERROR] /edit/json 이미지 편집 실패:")
+        print(error_trace)
+        raise HTTPException(status_code=500, detail=f"이미지 편집 실패: {str(e) or type(e).__name__}")
 
 
 @app.get("/output/{filename}")
