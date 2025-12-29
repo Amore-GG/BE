@@ -32,8 +32,14 @@ class ComfyUIClient:
                     files=files,
                     data=data
                 )
-                response.raise_for_status()
+                
+                if response.status_code != 200:
+                    print(f"[Upload Error] Status: {response.status_code}")
+                    print(f"[Upload Error] Response: {response.text}")
+                    response.raise_for_status()
+                
                 result = response.json()
+                print(f"[Upload Success] {filename} -> {result}")
                 return result.get("name", filename)
     
     async def upload_image_bytes(self, image_bytes: bytes, filename: str) -> str:
@@ -62,7 +68,23 @@ class ComfyUIClient:
                 f"{self.server_url}/prompt",
                 json=payload
             )
-            response.raise_for_status()
+            
+            # 에러 시 상세 내용 출력
+            if response.status_code != 200:
+                print(f"[ComfyUI Error] Status: {response.status_code}")
+                print(f"[ComfyUI Error] Response: {response.text}")
+                try:
+                    error_json = response.json()
+                    print(f"[ComfyUI Error] JSON: {error_json}")
+                    # ComfyUI 에러 메시지 추출
+                    if "error" in error_json:
+                        raise Exception(f"ComfyUI 에러: {error_json['error']}")
+                    if "node_errors" in error_json:
+                        raise Exception(f"노드 에러: {error_json['node_errors']}")
+                except:
+                    pass
+                response.raise_for_status()
+            
             result = response.json()
             return result["prompt_id"]
     
@@ -96,6 +118,8 @@ class ComfyUIClient:
         ws_url = self.server_url.replace("http://", "ws://").replace("https://", "wss://")
         ws_url = f"{ws_url}/ws?clientId={self.client_id}"
         
+        print(f"[WebSocket] Connecting to {ws_url}")
+        
         async with websockets.connect(ws_url) as websocket:
             start_time = asyncio.get_event_loop().time()
             
@@ -105,18 +129,40 @@ class ComfyUIClient:
                 
                 try:
                     message = await asyncio.wait_for(websocket.recv(), timeout=1.0)
-                    data = json.loads(message)
+                    
+                    # 바이너리 메시지는 스킵 (프리뷰 이미지 등)
+                    if isinstance(message, bytes):
+                        print(f"[WebSocket] Binary message received ({len(message)} bytes), skipping...")
+                        continue
+                    
+                    # 텍스트 메시지만 JSON 파싱
+                    try:
+                        data = json.loads(message)
+                    except json.JSONDecodeError as e:
+                        print(f"[WebSocket] JSON decode error: {e}")
+                        continue
+                    
+                    if data.get("type") == "progress":
+                        progress = data.get("data", {})
+                        value = progress.get("value", 0)
+                        max_val = progress.get("max", 1)
+                        print(f"Progress: {value}/{max_val} ({(value/max_val*100):.1f}%)")
                     
                     if data.get("type") == "executing":
                         exec_data = data.get("data", {})
                         if exec_data.get("prompt_id") == prompt_id:
-                            if exec_data.get("node") is None:
+                            node = exec_data.get("node")
+                            if node:
+                                print(f"Executing node: {node}")
+                            if node is None:
                                 # 실행 완료
+                                print("Execution completed!")
                                 break
                     
                     elif data.get("type") == "execution_error":
                         exec_data = data.get("data", {})
                         if exec_data.get("prompt_id") == prompt_id:
+                            print(f"[WebSocket] Execution error: {exec_data}")
                             raise Exception(f"Execution error: {exec_data}")
                 
                 except asyncio.TimeoutError:
@@ -148,32 +194,31 @@ class ComfyUIClient:
         image2_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """워크플로우의 이미지 파일명 업데이트"""
-        workflow = workflow.copy()
+        import copy
+        workflow = copy.deepcopy(workflow)  # Deep copy로 변경
         
-        # LoadImage 노드 찾아서 업데이트
+        # LoadImage 노드 찾기
+        load_image_nodes = []
         for node_id, node in workflow.items():
             if node.get("class_type") == "LoadImage":
-                inputs = node.get("inputs", {})
-                title = node.get("_meta", {}).get("title", "")
-                
-                # 첫 번째 이미지
-                if "image" in inputs:
-                    if image2_name is None:
-                        inputs["image"] = image1_name
-                    else:
-                        # 순서대로 할당 (첫 번째 발견 = image1)
-                        if not hasattr(self, "_image_assigned"):
-                            self._image_assigned = False
-                        
-                        if not self._image_assigned:
-                            inputs["image"] = image1_name
-                            self._image_assigned = True
-                        else:
-                            inputs["image"] = image2_name
+                load_image_nodes.append((node_id, node))
         
-        # 임시 변수 정리
-        if hasattr(self, "_image_assigned"):
-            delattr(self, "_image_assigned")
+        # 노드 ID 순으로 정렬 (숫자로 정렬)
+        load_image_nodes.sort(key=lambda x: int(x[0]) if x[0].isdigit() else float('inf'))
+        
+        print(f"[Workflow] LoadImage 노드 발견: {[n[0] for n in load_image_nodes]}")
+        
+        # 첫 번째 이미지 노드에 image1 할당
+        if len(load_image_nodes) >= 1:
+            node_id, node = load_image_nodes[0]
+            node["inputs"]["image"] = image1_name
+            print(f"[Workflow] 노드 {node_id}에 image1 설정: {image1_name}")
+        
+        # 두 번째 이미지 노드에 image2 할당 (있는 경우)
+        if len(load_image_nodes) >= 2 and image2_name:
+            node_id, node = load_image_nodes[1]
+            node["inputs"]["image"] = image2_name
+            print(f"[Workflow] 노드 {node_id}에 image2 설정: {image2_name}")
         
         return workflow
     
@@ -183,7 +228,8 @@ class ComfyUIClient:
         prompt: str
     ) -> Dict[str, Any]:
         """워크플로우의 프롬프트 업데이트"""
-        workflow = workflow.copy()
+        import copy
+        workflow = copy.deepcopy(workflow)  # Deep copy
         
         for node_id, node in workflow.items():
             class_type = node.get("class_type", "")

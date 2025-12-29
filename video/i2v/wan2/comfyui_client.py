@@ -32,8 +32,14 @@ class ComfyUIClient:
                     files=files,
                     data=data
                 )
-                response.raise_for_status()
+                
+                if response.status_code != 200:
+                    print(f"[Upload Error] Status: {response.status_code}")
+                    print(f"[Upload Error] Response: {response.text}")
+                    response.raise_for_status()
+                
                 result = response.json()
+                print(f"[Upload Success] {filename} -> {result}")
                 return result.get("name", filename)
     
     async def upload_image_bytes(self, image_bytes: bytes, filename: str) -> str:
@@ -62,8 +68,25 @@ class ComfyUIClient:
                 f"{self.server_url}/prompt",
                 json=payload
             )
-            response.raise_for_status()
+            
+            # 에러 시 상세 내용 출력
+            if response.status_code != 200:
+                print(f"[ComfyUI Error] Status: {response.status_code}")
+                print(f"[ComfyUI Error] Response: {response.text}")
+                try:
+                    error_json = response.json()
+                    print(f"[ComfyUI Error] JSON: {error_json}")
+                    if "error" in error_json:
+                        raise Exception(f"ComfyUI 에러: {error_json['error']}")
+                    if "node_errors" in error_json:
+                        raise Exception(f"노드 에러: {error_json['node_errors']}")
+                except Exception as e:
+                    if "ComfyUI 에러" in str(e) or "노드 에러" in str(e):
+                        raise
+                response.raise_for_status()
+            
             result = response.json()
+            print(f"[ComfyUI] Prompt queued: {result.get('prompt_id', 'unknown')}")
             return result["prompt_id"]
     
     async def get_history(self, prompt_id: str) -> Dict[str, Any]:
@@ -112,6 +135,8 @@ class ComfyUIClient:
         ws_url = self.server_url.replace("http://", "ws://").replace("https://", "wss://")
         ws_url = f"{ws_url}/ws?clientId={self.client_id}"
         
+        print(f"[WebSocket] Connecting to {ws_url}")
+        
         async with websockets.connect(ws_url) as websocket:
             start_time = asyncio.get_event_loop().time()
             
@@ -121,7 +146,19 @@ class ComfyUIClient:
                 
                 try:
                     message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
-                    data = json.loads(message)
+                    
+                    # 바이너리 메시지는 스킵 (프리뷰 이미지 등)
+                    if isinstance(message, bytes):
+                        print(f"[WebSocket] Binary message received ({len(message)} bytes), skipping...")
+                        continue
+                    
+                    # 텍스트 메시지만 JSON 파싱
+                    try:
+                        data = json.loads(message)
+                    except json.JSONDecodeError as e:
+                        print(f"[WebSocket] JSON decode error: {e}")
+                        print(f"[WebSocket] Raw message: {message[:200]}...")
+                        continue
                     
                     # 진행 상황 로깅
                     if data.get("type") == "progress":
@@ -183,6 +220,9 @@ class ComfyUIClient:
         """Image-to-Video 워크플로우 업데이트"""
         workflow = json.loads(json.dumps(workflow))  # Deep copy
         
+        print(f"[Workflow] 업데이트 시작: image={image_filename}, prompt={prompt[:50]}...")
+        print(f"[Workflow] 파라미터: width={width}, height={height}, length={length}, steps={steps}, cfg={cfg}")
+        
         for node_id, node in workflow.items():
             class_type = node.get("class_type", "")
             title = node.get("_meta", {}).get("title", "")
@@ -191,26 +231,33 @@ class ComfyUIClient:
             # 이미지 로드 노드 (노드 172)
             if class_type == "LoadImage":
                 inputs["image"] = image_filename
+                print(f"[Workflow] 노드 {node_id} (LoadImage): image={image_filename}")
             
             # Positive Prompt (노드 6)
             elif class_type == "CLIPTextEncode":
                 if "Positive" in title:
                     inputs["text"] = prompt
+                    print(f"[Workflow] 노드 {node_id} (Positive Prompt): 설정됨")
             
             # 파라미터 노드들 (easy int, easy float)
             elif class_type == "easy int":
                 if "Width" in title:
                     inputs["value"] = width
+                    print(f"[Workflow] 노드 {node_id} (Width): {width}")
                 elif "Height" in title:
                     inputs["value"] = height
+                    print(f"[Workflow] 노드 {node_id} (Height): {height}")
                 elif "Length" in title:
                     inputs["value"] = length
+                    print(f"[Workflow] 노드 {node_id} (Length): {length}")
                 elif "Steps" in title:
                     inputs["value"] = steps
+                    print(f"[Workflow] 노드 {node_id} (Steps): {steps}")
             
             elif class_type == "easy float":
                 if "CFG" in title:
                     inputs["value"] = cfg
+                    print(f"[Workflow] 노드 {node_id} (CFG): {cfg}")
         
         return workflow
     
