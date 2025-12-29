@@ -137,6 +137,8 @@ class ComfyUIClient:
         
         print(f"[WebSocket] Connecting to {ws_url}")
         
+        executed_nodes = []  # 실행된 노드 추적
+        
         async with websockets.connect(ws_url) as websocket:
             start_time = asyncio.get_event_loop().time()
             
@@ -160,6 +162,16 @@ class ComfyUIClient:
                         print(f"[WebSocket] Raw message: {message[:200]}...")
                         continue
                     
+                    # 실행 시작 메시지
+                    if data.get("type") == "execution_start":
+                        print(f"[ComfyUI] Execution started for prompt: {prompt_id}")
+                    
+                    # 캐시된 노드 정보
+                    if data.get("type") == "execution_cached":
+                        cached = data.get("data", {}).get("nodes", [])
+                        if cached:
+                            print(f"[ComfyUI] Cached nodes: {cached}")
+                    
                     # 진행 상황 로깅
                     if data.get("type") == "progress":
                         progress = data.get("data", {})
@@ -172,15 +184,26 @@ class ComfyUIClient:
                         if exec_data.get("prompt_id") == prompt_id:
                             node = exec_data.get("node")
                             if node:
+                                executed_nodes.append(node)
                                 print(f"Executing node: {node}")
                             if node is None:
                                 # 실행 완료
                                 print("Execution completed!")
+                                print(f"[Summary] Total executed nodes: {len(executed_nodes)}")
+                                print(f"[Summary] Executed: {executed_nodes}")
+                                
+                                # 비디오 관련 노드 실행 여부 확인
+                                video_nodes = ['57', '58', '224', '68']
+                                missing_nodes = [n for n in video_nodes if n not in executed_nodes]
+                                if missing_nodes:
+                                    print(f"[WARNING] Video nodes NOT executed: {missing_nodes}")
+                                    print(f"[WARNING] 57=KSamplerAdvanced(high), 58=KSamplerAdvanced(low), 224=VAEDecodeTiled, 68=VideoCombine")
                                 break
                     
                     elif data.get("type") == "execution_error":
                         exec_data = data.get("data", {})
                         if exec_data.get("prompt_id") == prompt_id:
+                            print(f"[ERROR] Execution error: {exec_data}")
                             raise Exception(f"Execution error: {exec_data}")
                 
                 except asyncio.TimeoutError:

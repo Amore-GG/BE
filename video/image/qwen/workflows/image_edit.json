@@ -82,9 +82,9 @@
   },
   "65": {
     "inputs": {
-      "seed": 374470990866512,
-      "steps": 20,
-      "cfg": 4,
+      "seed": 636148734626719,
+      "steps": 4,
+      "cfg": 1.0,
       "sampler_name": "euler",
       "scheduler": "simple",
       "denoise": 1,
@@ -112,7 +112,7 @@
   },
   "67": {
     "inputs": {
-      "shift": 3.1,
+      "shift": 3.0,
       "model": [
         "74",
         0

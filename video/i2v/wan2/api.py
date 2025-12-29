@@ -279,7 +279,18 @@ async def generate_video_form(
                 if isinstance(node_output, dict):
                     if "images" in node_output:
                         print(f"[Debug] Node {node_id} has images: {node_output['images']}")
-            raise HTTPException(status_code=500, detail=f"출력 비디오가 없습니다. outputs: {list(outputs.keys())}")
+            
+            # 비디오 생성 노드 (68)가 실행되지 않은 경우 상세 오류 메시지
+            error_msg = f"출력 비디오가 없습니다.\n"
+            error_msg += f"실행된 노드: {list(outputs.keys())}\n"
+            error_msg += f"비디오 생성 노드 (68)가 실행되지 않았습니다.\n"
+            error_msg += f"ComfyUI 서버에서 다음 모델들이 있는지 확인하세요:\n"
+            error_msg += f"- wan2.2_i2v_high_noise_14B_Q5_K_S.gguf\n"
+            error_msg += f"- wan2.2_i2v_low_noise_14B_Q5_K_S.gguf\n"
+            error_msg += f"- wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors\n"
+            error_msg += f"- wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors\n"
+            error_msg += f"ComfyUI 웹에서 직접 워크플로우를 실행해서 오류를 확인하세요."
+            raise HTTPException(status_code=500, detail=error_msg)
         
         # 첫 번째 출력 비디오 저장
         vid_info = output_videos[0]
