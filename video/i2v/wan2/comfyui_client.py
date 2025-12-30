@@ -89,8 +89,10 @@ class ComfyUIClient:
                 response.raise_for_status()
             
             result = response.json()
-            print(f"[ComfyUI] Prompt queued: {result.get('prompt_id', 'unknown')}")
-            return result["prompt_id"]
+            prompt_id = result["prompt_id"]
+            print(f"[ComfyUI] Prompt queued successfully!")
+            print(f"[ComfyUI] Prompt ID: {prompt_id}")
+            return prompt_id
     
     async def get_history(self, prompt_id: str) -> Dict[str, Any]:
         """실행 히스토리 조회"""
@@ -139,77 +141,115 @@ class ComfyUIClient:
         ws_url = f"{ws_url}/ws?clientId={self.client_id}"
         
         print(f"[WebSocket] Connecting to {ws_url}")
+        print(f"[WebSocket] Waiting for prompt_id: {prompt_id}")
         
         executed_nodes = []  # 실행된 노드 추적
+        message_count = 0
+        last_log_time = 0
         
         async with websockets.connect(ws_url) as websocket:
+            print(f"[WebSocket] Connected successfully!")
             start_time = asyncio.get_event_loop().time()
             
             while True:
-                if asyncio.get_event_loop().time() - start_time > timeout:
+                elapsed = asyncio.get_event_loop().time() - start_time
+                if elapsed > timeout:
                     raise TimeoutError(f"Timeout waiting for prompt {prompt_id}")
                 
                 try:
                     message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
+                    message_count += 1
                     
                     # 바이너리 메시지는 스킵 (프리뷰 이미지 등)
                     if isinstance(message, bytes):
-                        print(f"[WebSocket] Binary message received ({len(message)} bytes), skipping...")
-                        continue
+                        continue  # 바이너리 메시지는 조용히 스킵
                     
                     # 텍스트 메시지만 JSON 파싱
                     try:
                         data = json.loads(message)
                     except json.JSONDecodeError as e:
                         print(f"[WebSocket] JSON decode error: {e}")
-                        print(f"[WebSocket] Raw message: {message[:200]}...")
                         continue
                     
+                    msg_type = data.get("type", "unknown")
+                    
+                    # 상태 메시지
+                    if msg_type == "status":
+                        status = data.get("data", {}).get("status", {})
+                        queue_remaining = status.get("exec_info", {}).get("queue_remaining", "?")
+                        print(f"[WebSocket] Status: queue_remaining={queue_remaining}")
+                    
                     # 실행 시작 메시지
-                    if data.get("type") == "execution_start":
-                        print(f"[ComfyUI] Execution started for prompt: {prompt_id}")
+                    elif msg_type == "execution_start":
+                        recv_prompt_id = data.get("data", {}).get("prompt_id")
+                        if recv_prompt_id == prompt_id:
+                            print(f"[ComfyUI] Execution STARTED for our prompt!")
+                        else:
+                            print(f"[ComfyUI] Different prompt started: {recv_prompt_id[:8]}...")
                     
                     # 캐시된 노드 정보
-                    if data.get("type") == "execution_cached":
+                    elif msg_type == "execution_cached":
                         cached = data.get("data", {}).get("nodes", [])
                         if cached:
-                            print(f"[ComfyUI] Cached nodes: {cached}")
+                            print(f"[ComfyUI] Cached nodes: {len(cached)} nodes")
                     
                     # 진행 상황 로깅
-                    if data.get("type") == "progress":
+                    elif msg_type == "progress":
                         progress = data.get("data", {})
                         value = progress.get("value", 0)
                         max_val = progress.get("max", 1)
-                        print(f"Progress: {value}/{max_val} ({(value/max_val*100):.1f}%)")
+                        node = progress.get("node", "?")
+                        pct = (value/max_val*100) if max_val > 0 else 0
+                        print(f"[Progress] Node {node}: {value}/{max_val} ({pct:.1f}%)")
                     
-                    if data.get("type") == "executing":
+                    elif msg_type == "executing":
                         exec_data = data.get("data", {})
-                        if exec_data.get("prompt_id") == prompt_id:
+                        recv_prompt_id = exec_data.get("prompt_id")
+                        
+                        if recv_prompt_id == prompt_id:
                             node = exec_data.get("node")
                             if node:
                                 executed_nodes.append(node)
-                                print(f"Executing node: {node}")
+                                print(f"[Executing] ▶Node {node}")
                             if node is None:
                                 # 실행 완료
-                                print("Execution completed!")
+                                print(f"\n[ComfyUI] Execution COMPLETED!")
                                 print(f"[Summary] Total executed nodes: {len(executed_nodes)}")
                                 print(f"[Summary] Executed: {executed_nodes}")
                                 
                                 # 비디오 관련 노드 실행 여부 확인
                                 video_nodes = ['57', '58', '224', '68']
-                                missing_nodes = [n for n in video_nodes if n not in executed_nodes]
-                                if missing_nodes:
-                                    print(f"[WARNING] Video nodes NOT executed: {missing_nodes}")
-                                    print(f"[WARNING] 57=KSamplerAdvanced(high), 58=KSamplerAdvanced(low), 224=VAEDecodeTiled, 68=VideoCombine")
+                                executed_video = [n for n in video_nodes if n in executed_nodes]
+                                missing_video = [n for n in video_nodes if n not in executed_nodes]
+                                
+                                if executed_video:
+                                    print(f"[Summary] Video nodes executed: {executed_video}")
+                                if missing_video:
+                                    print(f"[WARNING] Video nodes NOT executed: {missing_video}")
+                                    print(f"  57=KSamplerAdvanced(high), 58=KSamplerAdvanced(low)")
+                                    print(f"  224=VAEDecodeTiled, 68=VideoCombine")
                                 break
+                        else:
+                            print(f"[WebSocket] Different prompt executing: {recv_prompt_id[:8] if recv_prompt_id else 'None'}...")
                     
-                    elif data.get("type") == "execution_error":
+                    elif msg_type == "execution_error":
                         exec_data = data.get("data", {})
                         if exec_data.get("prompt_id") == prompt_id:
-                            print(f"[ERROR] Execution error: {exec_data}")
+                            print(f"[ERROR] Execution error!")
+                            print(f"[ERROR] Node: {exec_data.get('node_id')}")
+                            print(f"[ERROR] Type: {exec_data.get('node_type')}")
+                            print(f"[ERROR] Message: {exec_data.get('exception_message')}")
                             raise Exception(f"Execution error: {exec_data}")
+                    
+                    # crystools.monitor 등 기타 메시지는 무시
+                    elif msg_type not in ["crystools.monitor"]:
+                        print(f"[WebSocket] Message type: {msg_type}")
                 
                 except asyncio.TimeoutError:
+                    # 30초마다 상태 출력
+                    if int(elapsed) - last_log_time >= 30:
+                        last_log_time = int(elapsed)
+                        print(f"[WebSocket] Waiting... ({int(elapsed)}s elapsed, {len(executed_nodes)} nodes executed)")
                     continue
         
         # 히스토리에서 결과 가져오기
