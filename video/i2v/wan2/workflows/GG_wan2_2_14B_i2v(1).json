@@ -1,7 +1,7 @@
 {
   "6": {
     "inputs": {
-      "text": "Make a video of her singing",
+      "text": "Make a video of a character saying hello while singing",
       "clip": [
         "38",
         0
@@ -47,7 +47,7 @@
   },
   "54": {
     "inputs": {
-      "shift": 8.000000000000002,
+      "shift": 8.0,
       "model": [
         "204",
         0
@@ -60,7 +60,7 @@
   },
   "55": {
     "inputs": {
-      "shift": 8,
+      "shift": 8.0,
       "model": [
         "205",
         0
@@ -239,7 +239,7 @@
   "78": {
     "inputs": {
       "lora_name": "wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors",
-      "strength_model": 1,
+      "strength_model": 1.0,
       "model": [
         "210",
         0
@@ -298,7 +298,7 @@
   "123": {
     "inputs": {
       "lora_name": "wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors",
-      "strength_model": 1.5000000000000002,
+      "strength_model": 1.5,
       "model": [
         "209",
         0
@@ -320,7 +320,7 @@
   },
   "177": {
     "inputs": {
-      "value": 1.0000000000000002
+      "value": 1.0
     },
     "class_type": "easy float",
     "_meta": {

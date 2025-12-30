@@ -36,7 +36,7 @@ app.add_middleware(
 
 # 환경변수
 COMFYUI_URL = os.getenv("COMFYUI_URL", "http://localhost:8000")
-WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/GG_wan2_2_14B_i2v.json")
+WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/GG_wan2_2_14B_i2v(1).json")
 
 # 디렉토리 설정
 UPLOAD_DIR = "uploads"
