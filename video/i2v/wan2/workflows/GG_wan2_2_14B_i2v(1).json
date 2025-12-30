@@ -86,10 +86,7 @@
       "sampler_name": "euler",
       "scheduler": "simple",
       "start_at_step": 0,
-      "end_at_step": [
-        "113",
-        0
-      ],
+      "end_at_step": 4,
       "return_with_leftover_noise": "enable",
       "model": [
         "54",
@@ -127,10 +124,7 @@
       ],
       "sampler_name": "euler",
       "scheduler": "simple",
-      "start_at_step": [
-        "113",
-        0
-      ],
+      "start_at_step": 4,
       "end_at_step": 10000,
       "return_with_leftover_noise": "disable",
       "model": [
@@ -276,23 +270,6 @@
     "class_type": "PathchSageAttentionKJ",
     "_meta": {
       "title": "Patch Sage Attention KJ"
-    }
-  },
-  "113": {
-    "inputs": {
-      "expression": "a*b/100",
-      "a": [
-        "179",
-        0
-      ],
-      "b": [
-        "211",
-        0
-      ]
-    },
-    "class_type": "MathExpression|pysssss",
-    "_meta": {
-      "title": "Math Expression 🐍"
     }
   },
   "123": {
