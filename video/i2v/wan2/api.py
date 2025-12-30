@@ -796,19 +796,18 @@ async def merge_project_videos(project_id: str, output_filename: Optional[str] =
     try:
         with open(concat_list_path, "w") as f:
             for v in video_files:
-                f.write(f"file '{v['path']}'\n")
+                f.write(f"file '{v['filename']}'\n")  # 파일명만 작성!
         
-        # FFmpeg로 영상 합치기
+        # FFmpeg로 영상 합치기 (프로젝트 폴더 내 상대경로)
         cmd = [
             "ffmpeg", "-y",
             "-f", "concat",
             "-safe", "0",
-            "-i", concat_list_path,
+            "-i", os.path.basename(concat_list_path),  # 파일명만 전달
             "-c", "copy",
-            output_path
+            final_filename
         ]
-        
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_dir)
         
         if result.returncode != 0:
             # 재인코딩으로 재시도
