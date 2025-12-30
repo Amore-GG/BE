@@ -235,13 +235,13 @@ async def generate_video_form(
         print(f"[Workflow] 노드 목록: {node_ids}")
         
         # 문제가 되는 노드 확인
-        problem_nodes = ['194', '195', '202', '230', '231']
+        problem_nodes = ['194', '195', '202', '230', '231', '81', '82', '83']
         found_problems = [n for n in problem_nodes if n in node_ids]
         if found_problems:
             print(f"[WARNING] 문제 노드 발견! {found_problems}")
             print(f"[WARNING] Docker 재빌드가 필요합니다!")
         else:
-            print(f"[Workflow] OK - Anything Everywhere 노드 없음")
+            print(f"[Workflow] OK - 불필요한 노드 없음 (PreviewImage 등 제거됨)")
         
         # 이미지 저장 및 업로드
         unique_id = str(uuid.uuid4())[:8]

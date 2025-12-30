@@ -250,56 +250,6 @@
       "title": "LoRA 로드 (모델 전용)"
     }
   },
-  "81": {
-    "inputs": {
-      "images": [
-        "67",
-        0
-      ]
-    },
-    "class_type": "PreviewImage",
-    "_meta": {
-      "title": "이미지 미리보기"
-    }
-  },
-  "82": {
-    "inputs": {
-      "samples": [
-        "57",
-        0
-      ],
-      "vae": [
-        "39",
-        0
-      ]
-    },
-    "class_type": "VAEDecode",
-    "_meta": {
-      "title": "VAE 디코드"
-    }
-  },
-  "83": {
-    "inputs": {
-      "frame_rate": 24,
-      "loop_count": 0,
-      "filename_prefix": "AnimateDiff",
-      "format": "video/h264-mp4",
-      "pix_fmt": "yuv420p",
-      "crf": 19,
-      "save_metadata": true,
-      "trim_to_audio": false,
-      "pingpong": false,
-      "save_output": false,
-      "images": [
-        "82",
-        0
-      ]
-    },
-    "class_type": "VHS_VideoCombine",
-    "_meta": {
-      "title": "Video Combine 🎥🅥🅗🅢"
-    }
-  },
   "103": {
     "inputs": {
       "sage_attention": "auto",
