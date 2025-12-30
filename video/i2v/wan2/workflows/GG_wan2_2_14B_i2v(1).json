@@ -175,6 +175,10 @@
       "start_image": [
         "67",
         0
+      ],
+      "vae": [
+        "39",
+        0
       ]
     },
     "class_type": "WanImageToVideo",
