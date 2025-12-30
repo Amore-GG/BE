@@ -5,10 +5,11 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 
-# 시스템 패키지
+# 시스템 패키지 (FFmpeg 포함)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
+        ffmpeg \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

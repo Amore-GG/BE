@@ -83,6 +83,8 @@ class I2VRequest(BaseModel):
     """이미지 → 비디오 요청 (JSON Body용)"""
     prompt: str = Field(..., description="영상 생성 프롬프트")
     image_filename: str = Field(..., description="입력 이미지 파일명 (업로드된)")
+    project_id: Optional[str] = Field(None, description="프로젝트 ID (FE에서 스토리보드 구분용)")
+    sequence: Optional[int] = Field(None, description="시퀀스 번호 (스토리보드 순서, 1부터 시작)")
     width: Optional[int] = Field(512, description="영상 너비 (기본: 512)")
     height: Optional[int] = Field(512, description="영상 높이 (기본: 512)")
     length: Optional[int] = Field(121, description="프레임 수 (기본: 121, 약 6초)")
@@ -94,6 +96,8 @@ class I2VResponse(BaseModel):
     """이미지 → 비디오 응답"""
     success: bool
     output_file: str
+    project_id: Optional[str] = None
+    sequence: Optional[int] = None
     message: str
     processing_time: float
 
@@ -203,6 +207,8 @@ async def upload_image(
 async def generate_video_form(
     image: UploadFile = File(..., description="입력 이미지"),
     prompt: str = Form(..., description="영상 생성 프롬프트"),
+    project_id: Optional[str] = Form(None, description="프로젝트 ID (스토리보드 구분용)"),
+    sequence: Optional[int] = Form(None, description="시퀀스 번호 (1부터 시작)"),
     width: Optional[int] = Form(512, description="영상 너비"),
     height: Optional[int] = Form(512, description="영상 높이"),
     length: Optional[int] = Form(121, description="프레임 수 (약 6초)"),
@@ -214,6 +220,8 @@ async def generate_video_form(
     
     - **image**: 입력 이미지 (필수)
     - **prompt**: 영상 생성 프롬프트 (예: "The character walks forward slowly")
+    - **project_id**: 프로젝트 ID (스토리보드 구분용, 예: "user123_story456")
+    - **sequence**: 시퀀스 번호 (스토리보드 순서, 1부터 시작)
     - **width**: 영상 너비 (기본: 512)
     - **height**: 영상 높이 (기본: 512)
     - **length**: 프레임 수 (기본: 121, 약 6초 @ 20fps)
@@ -315,10 +323,28 @@ async def generate_video_form(
             vid_info.get("type", "output")
         )
         
-        # 로컬에 저장
+        # 로컬에 저장 (프로젝트별 폴더 구조)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_filename = f"i2v_{timestamp}_{unique_id}.mp4"
-        output_path = os.path.join(OUTPUT_DIR, output_filename)
+        
+        if project_id:
+            # 프로젝트 폴더 생성
+            project_dir = os.path.join(OUTPUT_DIR, f"proj_{project_id}")
+            os.makedirs(project_dir, exist_ok=True)
+            
+            # 시퀀스 번호가 있으면 순서대로 파일명 생성
+            if sequence is not None:
+                output_filename = f"scene_{sequence:03d}.mp4"
+            else:
+                output_filename = f"scene_{timestamp}_{unique_id}.mp4"
+            
+            output_path = os.path.join(project_dir, output_filename)
+            # API 응답용 상대 경로
+            relative_filename = f"proj_{project_id}/{output_filename}"
+        else:
+            # 프로젝트 ID 없으면 기존 방식
+            output_filename = f"i2v_{timestamp}_{unique_id}.mp4"
+            output_path = os.path.join(OUTPUT_DIR, output_filename)
+            relative_filename = output_filename
         
         with open(output_path, "wb") as f:
             f.write(vid_bytes)
@@ -327,7 +353,9 @@ async def generate_video_form(
         
         return I2VResponse(
             success=True,
-            output_file=output_filename,
+            output_file=relative_filename,
+            project_id=project_id,
+            sequence=sequence,
             message="영상 생성 완료",
             processing_time=round(processing_time, 2)
         )
@@ -384,7 +412,7 @@ async def generate_video_json(request: I2VRequest):
         if not output_videos:
             raise HTTPException(status_code=500, detail="출력 비디오가 없습니다")
         
-        # 비디오 저장
+        # 비디오 저장 (프로젝트별 폴더 구조)
         vid_info = output_videos[0]
         vid_bytes = await client.get_video(
             vid_info["filename"],
@@ -394,8 +422,24 @@ async def generate_video_json(request: I2VRequest):
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_id = str(uuid.uuid4())[:8]
-        output_filename = f"i2v_{timestamp}_{unique_id}.mp4"
-        output_path = os.path.join(OUTPUT_DIR, output_filename)
+        
+        if request.project_id:
+            # 프로젝트 폴더 생성
+            project_dir = os.path.join(OUTPUT_DIR, f"proj_{request.project_id}")
+            os.makedirs(project_dir, exist_ok=True)
+            
+            # 시퀀스 번호가 있으면 순서대로 파일명 생성
+            if request.sequence is not None:
+                output_filename = f"scene_{request.sequence:03d}.mp4"
+            else:
+                output_filename = f"scene_{timestamp}_{unique_id}.mp4"
+            
+            output_path = os.path.join(project_dir, output_filename)
+            relative_filename = f"proj_{request.project_id}/{output_filename}"
+        else:
+            output_filename = f"i2v_{timestamp}_{unique_id}.mp4"
+            output_path = os.path.join(OUTPUT_DIR, output_filename)
+            relative_filename = output_filename
         
         with open(output_path, "wb") as f:
             f.write(vid_bytes)
@@ -404,7 +448,9 @@ async def generate_video_json(request: I2VRequest):
         
         return I2VResponse(
             success=True,
-            output_file=output_filename,
+            output_file=relative_filename,
+            project_id=request.project_id,
+            sequence=request.sequence,
             message="영상 생성 완료",
             processing_time=round(processing_time, 2)
         )
@@ -419,24 +465,31 @@ async def generate_video_json(request: I2VRequest):
         raise HTTPException(status_code=500, detail=f"영상 생성 실패: {str(e) or type(e).__name__}")
 
 
-@app.get("/output/{filename}")
+@app.get("/output/{filename:path}")
 async def get_output(filename: str):
-    """결과 영상 다운로드"""
+    """
+    결과 영상 다운로드
+    
+    - filename: 파일명 또는 프로젝트 경로 (예: "i2v_xxx.mp4" 또는 "proj_abc123/scene_001.mp4")
+    """
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
     
+    # 파일명만 추출 (다운로드용)
+    download_name = os.path.basename(filename)
+    
     return FileResponse(
         filepath,
         media_type="video/mp4",
-        filename=filename
+        filename=download_name
     )
 
 
-@app.delete("/output/{filename}")
+@app.delete("/output/{filename:path}")
 async def delete_output(filename: str):
-    """결과 영상 삭제"""
+    """결과 영상 삭제 (프로젝트 경로 지원)"""
     filepath = os.path.join(OUTPUT_DIR, filename)
     
     if not os.path.exists(filepath):
@@ -448,7 +501,7 @@ async def delete_output(filename: str):
 
 @app.get("/outputs")
 async def list_outputs():
-    """결과 영상 목록"""
+    """결과 영상 목록 (전체)"""
     files = []
     for f in Path(OUTPUT_DIR).glob("*"):
         if f.is_file():
@@ -457,7 +510,370 @@ async def list_outputs():
                 "size_mb": round(f.stat().st_size / (1024 * 1024), 2),
                 "created": datetime.fromtimestamp(f.stat().st_ctime).isoformat()
             })
+    # 생성 시간 순으로 정렬
+    files.sort(key=lambda x: x["created"])
     return {"files": files, "count": len(files)}
+
+
+@app.get("/projects")
+async def list_projects():
+    """프로젝트 목록 조회"""
+    projects = []
+    for d in Path(OUTPUT_DIR).glob("proj_*"):
+        if d.is_dir():
+            project_id = d.name.replace("proj_", "")
+            video_count = len(list(d.glob("*.mp4")))
+            
+            # 합쳐진 최종 영상 확인
+            final_video = None
+            for f in d.glob("final*.mp4"):
+                final_video = f.name
+                break
+            
+            projects.append({
+                "project_id": project_id,
+                "folder": d.name,
+                "video_count": video_count,
+                "final_video": final_video,
+                "created": datetime.fromtimestamp(d.stat().st_ctime).isoformat()
+            })
+    
+    projects.sort(key=lambda x: x["created"], reverse=True)
+    return {"projects": projects, "count": len(projects)}
+
+
+@app.get("/project/{project_id}/videos")
+async def list_project_videos(project_id: str):
+    """특정 프로젝트의 영상 목록 (시퀀스 순서대로)"""
+    project_dir = os.path.join(OUTPUT_DIR, f"proj_{project_id}")
+    
+    if not os.path.exists(project_dir):
+        raise HTTPException(status_code=404, detail=f"프로젝트를 찾을 수 없습니다: {project_id}")
+    
+    videos = []
+    for f in Path(project_dir).glob("*.mp4"):
+        if f.is_file():
+            # scene_001.mp4 형식에서 시퀀스 번호 추출
+            name = f.stem
+            seq = None
+            if name.startswith("scene_") and len(name) >= 9:
+                try:
+                    seq = int(name.split("_")[1])
+                except:
+                    pass
+            
+            videos.append({
+                "filename": f.name,
+                "path": f"proj_{project_id}/{f.name}",
+                "sequence": seq,
+                "size_mb": round(f.stat().st_size / (1024 * 1024), 2),
+                "created": datetime.fromtimestamp(f.stat().st_ctime).isoformat()
+            })
+    
+    # 시퀀스 번호로 정렬 (없으면 생성 시간 순)
+    videos.sort(key=lambda x: (x["sequence"] is None, x["sequence"] or 0, x["created"]))
+    
+    return {
+        "project_id": project_id,
+        "videos": videos,
+        "count": len(videos)
+    }
+
+
+# ============================================================
+# 영상 합치기 API
+# ============================================================
+
+class MergeRequest(BaseModel):
+    """영상 합치기 요청"""
+    video_files: List[str] = Field(..., description="합칠 영상 파일명 목록 (순서대로)")
+    output_filename: Optional[str] = Field(None, description="출력 파일명 (없으면 자동 생성)")
+    
+class MergeResponse(BaseModel):
+    """영상 합치기 응답"""
+    success: bool
+    output_file: str
+    total_duration: float = Field(description="총 영상 길이 (초)")
+    video_count: int = Field(description="합친 영상 개수")
+    message: str
+
+
+@app.post("/merge", response_model=MergeResponse)
+async def merge_videos(request: MergeRequest):
+    """
+    여러 영상을 순서대로 합쳐서 하나의 영상으로 만들기
+    
+    예시:
+    ```json
+    {
+        "video_files": ["i2v_20241230_001.mp4", "i2v_20241230_002.mp4", "i2v_20241230_003.mp4"],
+        "output_filename": "merged_final.mp4"
+    }
+    ```
+    """
+    import subprocess
+    
+    if len(request.video_files) < 2:
+        raise HTTPException(status_code=400, detail="최소 2개 이상의 영상이 필요합니다")
+    
+    # 파일 존재 확인
+    video_paths = []
+    for filename in request.video_files:
+        filepath = os.path.join(OUTPUT_DIR, filename)
+        if not os.path.exists(filepath):
+            raise HTTPException(status_code=404, detail=f"파일을 찾을 수 없습니다: {filename}")
+        video_paths.append(filepath)
+    
+    # 출력 파일명 생성
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_filename = request.output_filename or f"merged_{timestamp}.mp4"
+    if not output_filename.endswith(".mp4"):
+        output_filename += ".mp4"
+    output_path = os.path.join(OUTPUT_DIR, output_filename)
+    
+    # FFmpeg concat 리스트 파일 생성
+    concat_list_path = os.path.join(OUTPUT_DIR, f"concat_{timestamp}.txt")
+    try:
+        with open(concat_list_path, "w") as f:
+            for vpath in video_paths:
+                # FFmpeg concat demuxer 형식
+                f.write(f"file '{os.path.abspath(vpath)}'\n")
+        
+        # FFmpeg로 영상 합치기
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "concat",
+            "-safe", "0",
+            "-i", concat_list_path,
+            "-c", "copy",  # 재인코딩 없이 빠르게 합치기
+            output_path
+        ]
+        
+        print(f"[Merge] 영상 합치기 시작: {len(video_paths)}개 영상")
+        print(f"[Merge] 명령: {' '.join(cmd)}")
+        
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            # 코덱이 다른 경우 재인코딩으로 재시도
+            print(f"[Merge] copy 실패, 재인코딩 시도...")
+            cmd = [
+                "ffmpeg", "-y",
+                "-f", "concat",
+                "-safe", "0",
+                "-i", concat_list_path,
+                "-c:v", "libx264",
+                "-preset", "fast",
+                "-crf", "23",
+                "-c:a", "aac",
+                "-b:a", "128k",
+                output_path
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                raise Exception(f"FFmpeg 오류: {result.stderr}")
+        
+        # 결과 영상 정보 가져오기
+        probe_cmd = [
+            "ffprobe", "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            output_path
+        ]
+        duration_result = subprocess.run(probe_cmd, capture_output=True, text=True)
+        total_duration = float(duration_result.stdout.strip()) if duration_result.returncode == 0 else 0
+        
+        print(f"[Merge] 완료! 출력: {output_filename}, 길이: {total_duration:.2f}초")
+        
+        return MergeResponse(
+            success=True,
+            output_file=output_filename,
+            total_duration=round(total_duration, 2),
+            video_count=len(video_paths),
+            message=f"{len(video_paths)}개 영상을 합쳐서 {total_duration:.1f}초 영상 생성 완료"
+        )
+        
+    finally:
+        # 임시 파일 삭제
+        if os.path.exists(concat_list_path):
+            os.remove(concat_list_path)
+
+
+@app.post("/merge/all", response_model=MergeResponse)
+async def merge_all_videos(output_filename: Optional[str] = None):
+    """
+    outputs 폴더의 모든 영상을 생성 시간 순서대로 합치기
+    
+    사용 예: 생성된 5초 영상 8개를 순서대로 합쳐서 40초 영상 만들기
+    """
+    # outputs 폴더의 모든 mp4 파일 가져오기
+    video_files = []
+    for f in Path(OUTPUT_DIR).glob("*.mp4"):
+        if f.is_file() and not f.name.startswith("merged_"):
+            video_files.append({
+                "filename": f.name,
+                "created": f.stat().st_ctime
+            })
+    
+    if len(video_files) < 2:
+        raise HTTPException(status_code=400, detail=f"합칠 영상이 부족합니다 (현재: {len(video_files)}개)")
+    
+    # 생성 시간 순 정렬
+    video_files.sort(key=lambda x: x["created"])
+    filenames = [v["filename"] for v in video_files]
+    
+    print(f"[Merge All] 합칠 영상 목록 ({len(filenames)}개):")
+    for i, name in enumerate(filenames, 1):
+        print(f"  {i}. {name}")
+    
+    # merge 함수 호출
+    request = MergeRequest(video_files=filenames, output_filename=output_filename)
+    return await merge_videos(request)
+
+
+@app.post("/merge/project/{project_id}", response_model=MergeResponse)
+async def merge_project_videos(project_id: str, output_filename: Optional[str] = None):
+    """
+    특정 프로젝트의 모든 영상을 시퀀스 순서대로 합치기
+    
+    - **project_id**: 프로젝트 ID
+    - **output_filename**: 출력 파일명 (기본: final.mp4)
+    
+    FE 사용 예시:
+    1. 스토리보드 8개 생성 (각각 project_id="story123", sequence=1~8)
+    2. POST /merge/project/story123 호출
+    3. 결과: proj_story123/final.mp4 (40초 영상)
+    """
+    import subprocess
+    
+    project_dir = os.path.join(OUTPUT_DIR, f"proj_{project_id}")
+    
+    if not os.path.exists(project_dir):
+        raise HTTPException(status_code=404, detail=f"프로젝트를 찾을 수 없습니다: {project_id}")
+    
+    # 프로젝트 폴더의 모든 scene 영상 가져오기
+    video_files = []
+    for f in Path(project_dir).glob("scene_*.mp4"):
+        if f.is_file():
+            # scene_001.mp4 형식에서 시퀀스 번호 추출
+            name = f.stem
+            seq = 999999
+            try:
+                seq = int(name.split("_")[1])
+            except:
+                pass
+            
+            video_files.append({
+                "path": str(f),
+                "filename": f.name,
+                "sequence": seq
+            })
+    
+    if len(video_files) < 2:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"합칠 영상이 부족합니다 (현재: {len(video_files)}개). 최소 2개 이상의 scene_XXX.mp4 파일이 필요합니다."
+        )
+    
+    # 시퀀스 순서로 정렬
+    video_files.sort(key=lambda x: x["sequence"])
+    
+    print(f"[Merge Project] 프로젝트 {project_id} 합치기 ({len(video_files)}개 영상):")
+    for i, v in enumerate(video_files, 1):
+        print(f"  {i}. {v['filename']} (seq: {v['sequence']})")
+    
+    # 출력 파일명 설정
+    final_filename = output_filename or "final.mp4"
+    if not final_filename.endswith(".mp4"):
+        final_filename += ".mp4"
+    output_path = os.path.join(project_dir, final_filename)
+    
+    # FFmpeg concat 리스트 파일 생성
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    concat_list_path = os.path.join(project_dir, f"concat_{timestamp}.txt")
+    
+    try:
+        with open(concat_list_path, "w") as f:
+            for v in video_files:
+                f.write(f"file '{v['path']}'\n")
+        
+        # FFmpeg로 영상 합치기
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "concat",
+            "-safe", "0",
+            "-i", concat_list_path,
+            "-c", "copy",
+            output_path
+        ]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            # 재인코딩으로 재시도
+            print(f"[Merge Project] copy 실패, 재인코딩 시도...")
+            cmd = [
+                "ffmpeg", "-y",
+                "-f", "concat",
+                "-safe", "0",
+                "-i", concat_list_path,
+                "-c:v", "libx264",
+                "-preset", "fast",
+                "-crf", "23",
+                "-c:a", "aac",
+                "-b:a", "128k",
+                output_path
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                raise Exception(f"FFmpeg 오류: {result.stderr}")
+        
+        # 결과 영상 정보
+        probe_cmd = [
+            "ffprobe", "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            output_path
+        ]
+        duration_result = subprocess.run(probe_cmd, capture_output=True, text=True)
+        total_duration = float(duration_result.stdout.strip()) if duration_result.returncode == 0 else 0
+        
+        relative_path = f"proj_{project_id}/{final_filename}"
+        print(f"[Merge Project] 완료! 출력: {relative_path}, 길이: {total_duration:.2f}초")
+        
+        return MergeResponse(
+            success=True,
+            output_file=relative_path,
+            total_duration=round(total_duration, 2),
+            video_count=len(video_files),
+            message=f"프로젝트 {project_id}: {len(video_files)}개 영상을 합쳐서 {total_duration:.1f}초 영상 생성 완료"
+        )
+        
+    finally:
+        if os.path.exists(concat_list_path):
+            os.remove(concat_list_path)
+
+
+@app.delete("/project/{project_id}")
+async def delete_project(project_id: str):
+    """프로젝트 전체 삭제 (폴더 및 모든 영상)"""
+    project_dir = os.path.join(OUTPUT_DIR, f"proj_{project_id}")
+    
+    if not os.path.exists(project_dir):
+        raise HTTPException(status_code=404, detail=f"프로젝트를 찾을 수 없습니다: {project_id}")
+    
+    # 폴더 내 파일 개수
+    file_count = len(list(Path(project_dir).glob("*")))
+    
+    # 폴더 삭제
+    shutil.rmtree(project_dir)
+    
+    return {
+        "success": True,
+        "message": f"프로젝트 {project_id} 삭제 완료 ({file_count}개 파일 삭제됨)"
+    }
 
 
 if __name__ == "__main__":
