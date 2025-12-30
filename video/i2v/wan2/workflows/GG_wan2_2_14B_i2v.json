@@ -102,6 +102,10 @@
       "negative": [
         "63",
         1
+      ],
+      "latent_image": [
+        "63",
+        2
       ]
     },
     "class_type": "KSamplerAdvanced",
@@ -262,6 +266,10 @@
     "inputs": {
       "samples": [
         "57",
+        0
+      ],
+      "vae": [
+        "39",
         0
       ]
     },
@@ -506,6 +514,10 @@
       "temporal_overlap": 8,
       "samples": [
         "58",
+        0
+      ],
+      "vae": [
+        "39",
         0
       ]
     },
