@@ -251,4 +251,28 @@ class ComfyUIClient:
                     node["inputs"]["text"] = prompt
         
         return workflow
+    
+    def randomize_seed(self, workflow: Dict[str, Any]) -> Dict[str, Any]:
+        """워크플로우의 KSampler seed를 랜덤하게 변경"""
+        import copy
+        import random
+        workflow = copy.deepcopy(workflow)
+        
+        for node_id, node in workflow.items():
+            class_type = node.get("class_type", "")
+            
+            # KSampler 또는 KSamplerAdvanced 노드의 seed 랜덤화
+            if "KSampler" in class_type:
+                inputs = node.get("inputs", {})
+                if "seed" in inputs:
+                    old_seed = inputs["seed"]
+                    new_seed = random.randint(0, 2**63 - 1)
+                    inputs["seed"] = new_seed
+                    print(f"[Workflow] 노드 {node_id} seed 변경: {old_seed} -> {new_seed}")
+                    
+                # noise_seed도 변경 (KSamplerAdvanced용)
+                if "noise_seed" in inputs:
+                    inputs["noise_seed"] = random.randint(0, 2**63 - 1)
+        
+        return workflow
 

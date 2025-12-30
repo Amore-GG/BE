@@ -36,7 +36,7 @@ app.add_middleware(
 
 # 환경변수
 COMFYUI_URL = os.getenv("COMFYUI_URL", "http://localhost:8000")
-WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/i2v.json")
+WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/GG_wan2_2_14B_i2v.json")
 
 # 디렉토리 설정
 UPLOAD_DIR = "uploads"
@@ -251,6 +251,7 @@ async def generate_video_form(
             steps=steps,
             cfg=cfg
         )
+        workflow = client.randomize_seed(workflow)  # seed 랜덤화
         
         # 실행 (영상 생성은 오래 걸림 - 타임아웃 30분)
         result = await client.execute_workflow(workflow, timeout=1800)
@@ -352,6 +353,7 @@ async def generate_video_json(request: I2VRequest):
             steps=request.steps,
             cfg=request.cfg
         )
+        workflow = client.randomize_seed(workflow)  # seed 랜덤화
         
         # 실행
         result = await client.execute_workflow(workflow, timeout=1800)

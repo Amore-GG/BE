@@ -36,7 +36,7 @@ app.add_middleware(
 
 # 환경변수
 COMFYUI_URL = os.getenv("COMFYUI_URL", "http://localhost:8000")
-WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/image_edit.json")
+WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/image_qwen_image_edit_2509.json")
 
 # 디렉토리 설정
 UPLOAD_DIR = "uploads"
@@ -242,6 +242,7 @@ async def edit_image_form(
         # 워크플로우 업데이트
         workflow = client.update_workflow_images(workflow, image1_filename, image2_filename)
         workflow = client.update_workflow_prompt(workflow, prompt)
+        workflow = client.randomize_seed(workflow)  # seed 랜덤화
         
         # 실행
         result = await client.execute_workflow(workflow, timeout=600)
@@ -314,6 +315,7 @@ async def edit_image_json(request: ImageEditRequest):
             request.image2_filename
         )
         workflow = client.update_workflow_prompt(workflow, request.prompt)
+        workflow = client.randomize_seed(workflow)  # seed 랜덤화
         
         # 실행
         result = await client.execute_workflow(workflow, timeout=600)
