@@ -90,7 +90,9 @@ class ComfyUIClient:
                 response.raise_for_status()
             
             result = response.json()
-            return result["prompt_id"]
+            prompt_id = result["prompt_id"]
+            print(f"[ComfyUI] Prompt queued successfully: {prompt_id}")
+            return prompt_id
     
     async def get_history(self, prompt_id: str) -> Dict[str, Any]:
         """실행 히스토리 조회"""
@@ -123,20 +125,25 @@ class ComfyUIClient:
         ws_url = f"{ws_url}/ws?clientId={self.client_id}"
         
         print(f"[WebSocket] Connecting to {ws_url}")
+        print(f"[WebSocket] Waiting for prompt_id: {prompt_id}")
         
         async with websockets.connect(ws_url) as websocket:
+            print(f"[WebSocket] Connected successfully!")
             start_time = asyncio.get_event_loop().time()
+            message_count = 0
             
             while True:
-                if asyncio.get_event_loop().time() - start_time > timeout:
+                elapsed = asyncio.get_event_loop().time() - start_time
+                if elapsed > timeout:
                     raise TimeoutError(f"Timeout waiting for prompt {prompt_id}")
                 
                 try:
                     message = await asyncio.wait_for(websocket.recv(), timeout=1.0)
+                    message_count += 1
                     
                     # 바이너리 메시지는 스킵 (프리뷰 이미지 등)
                     if isinstance(message, bytes):
-                        print(f"[WebSocket] Binary message received ({len(message)} bytes), skipping...")
+                        print(f"[WebSocket] Binary message #{message_count} ({len(message)} bytes), skipping...")
                         continue
                     
                     # 텍스트 메시지만 JSON 파싱
@@ -146,15 +153,23 @@ class ComfyUIClient:
                         print(f"[WebSocket] JSON decode error: {e}")
                         continue
                     
-                    if data.get("type") == "progress":
+                    msg_type = data.get("type", "unknown")
+                    
+                    if msg_type == "status":
+                        status = data.get("data", {}).get("status", {})
+                        queue_remaining = status.get("exec_info", {}).get("queue_remaining", "?")
+                        print(f"[WebSocket] Status: queue_remaining={queue_remaining}")
+                    
+                    elif msg_type == "progress":
                         progress = data.get("data", {})
                         value = progress.get("value", 0)
                         max_val = progress.get("max", 1)
                         print(f"Progress: {value}/{max_val} ({(value/max_val*100):.1f}%)")
                     
-                    if data.get("type") == "executing":
+                    elif msg_type == "executing":
                         exec_data = data.get("data", {})
-                        if exec_data.get("prompt_id") == prompt_id:
+                        recv_prompt_id = exec_data.get("prompt_id")
+                        if recv_prompt_id == prompt_id:
                             node = exec_data.get("node")
                             if node:
                                 print(f"Executing node: {node}")
@@ -162,14 +177,27 @@ class ComfyUIClient:
                                 # 실행 완료
                                 print("Execution completed!")
                                 break
+                        else:
+                            print(f"[WebSocket] Different prompt executing: {recv_prompt_id}")
                     
-                    elif data.get("type") == "execution_error":
+                    elif msg_type == "execution_start":
+                        exec_data = data.get("data", {})
+                        recv_prompt_id = exec_data.get("prompt_id")
+                        print(f"[WebSocket] Execution start: {recv_prompt_id}")
+                    
+                    elif msg_type == "execution_error":
                         exec_data = data.get("data", {})
                         if exec_data.get("prompt_id") == prompt_id:
                             print(f"[WebSocket] Execution error: {exec_data}")
                             raise Exception(f"Execution error: {exec_data}")
+                    
+                    else:
+                        print(f"[WebSocket] Message type: {msg_type}")
                 
                 except asyncio.TimeoutError:
+                    # 10초마다 상태 출력
+                    if int(elapsed) % 10 == 0 and int(elapsed) > 0:
+                        print(f"[WebSocket] Waiting... ({int(elapsed)}s elapsed, {message_count} messages received)")
                     continue
         
         # 히스토리에서 결과 가져오기
