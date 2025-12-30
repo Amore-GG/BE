@@ -1,32 +1,34 @@
 version: "3.8"
 
 services:
-  voice-api:
-    image: ghcr.io/amore-gg/amore-ai-voice:latest
-    container_name: voice-api
-    ports:
-      - "1000:1000"
-    environment:
-      - ENV=prod
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - voice_output:/app/generated_audio
-    restart: unless-stopped
+  # # voice-api (임시 비활성화)
+  # voice-api:
+  #   image: ghcr.io/amore-gg/amore-ai-voice:latest
+  #   container_name: voice-api
+  #   ports:
+  #     - "1000:1000"
+  #   environment:
+  #     - ENV=prod
+  #     - PYTHONUNBUFFERED=1
+  #   volumes:
+  #     - voice_output:/app/generated_audio
+  #   restart: unless-stopped
 
-  lip-api:
-    image: ghcr.io/amore-gg/amore-ai-lip:latest
-    container_name: lip-api
-    ports:
-      - "2000:2000"
-    environment:
-      - ENV=prod
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - lip_output:/app/results
-      - lip_uploads:/app/uploads
-      - /home/ubuntu/amore-ai/lip/checkpoints:/app/checkpoints
-      - /home/ubuntu/amore-ai/lip/face_detection/detection/sfd/s3fd.pth:/app/face_detection/detection/sfd/s3fd.pth
-    restart: unless-stopped
+  # # lip-api (임시 비활성화)
+  # lip-api:
+  #   image: ghcr.io/amore-gg/amore-ai-lip:latest
+  #   container_name: lip-api
+  #   ports:
+  #     - "2000:2000"
+  #   environment:
+  #     - ENV=prod
+  #     - PYTHONUNBUFFERED=1
+  #   volumes:
+  #     - lip_output:/app/results
+  #     - lip_uploads:/app/uploads
+  #     - /home/ubuntu/amore-ai/lip/checkpoints:/app/checkpoints
+  #     - /home/ubuntu/amore-ai/lip/face_detection/detection/sfd/s3fd.pth:/app/face_detection/detection/sfd/s3fd.pth
+  #   restart: unless-stopped
 
   elevenlabs-api:
     image: ghcr.io/amore-gg/amore-ai-elevenlabs:latest
@@ -70,9 +72,9 @@ services:
     restart: unless-stopped
 
 volumes:
-  voice_output:
-  lip_output:
-  lip_uploads:
+  # voice_output:  # 임시 비활성화
+  # lip_output:    # 임시 비활성화
+  # lip_uploads:   # 임시 비활성화
   elevenlabs_output:
   qwen_uploads:
   qwen_outputs:
