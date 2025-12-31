@@ -87,7 +87,7 @@ class ComfyUIClient:
                     if "ComfyUI 에러" in str(e) or "노드 에러" in str(e):
                         raise
                     raise Exception(f"ComfyUI 에러 (Status {response.status_code}): {response.text}")
-                response.raise_for_status()
+            response.raise_for_status()
             
             result = response.json()
             prompt_id = result["prompt_id"]
@@ -239,7 +239,7 @@ class ComfyUIClient:
         load_image_nodes.sort(key=lambda x: int(x[0]) if x[0].isdigit() else float('inf'))
         
         print(f"[Workflow] LoadImage 노드 발견: {[n[0] for n in load_image_nodes]}")
-        
+                
         # 첫 번째 이미지 노드에 image1 할당
         if len(load_image_nodes) >= 1:
             node_id, node = load_image_nodes[0]
