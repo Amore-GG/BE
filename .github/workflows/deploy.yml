@@ -205,6 +205,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./scenario/Qwen2.5-VL-7B-Instruct
+          dockerfile: ./scenario/Qwen2.5-VL-7B-Instruct/Dockerfile # << 경로 직접 명시!!
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-scenario-qwen-api:latest
