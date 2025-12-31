@@ -12,7 +12,6 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: amore-gg/amore-ai
-
 jobs:
   # ----------------------------
   # 1) Voice 이미지 빌드 & 푸시 (임시 비활성화)
