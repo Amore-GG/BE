@@ -17,6 +17,7 @@ workflows/
 *.env
 .idea/
 .vscode/
+
 # 대용량 모델/데이터
 *.zip
 *.tar
@@ -26,9 +27,20 @@ workflows/
 *.npy
 *.h5
 *.onnx
+
+!config.json
+!chat_template.json
+!generation_config.json
+!preprocessor_config.json
+!tokenizer_config.json
+!tokenizer.json
+!vocab.json
+!merges.txt
+!README.md
+
 qwen7B/
-Qwen*/
-*.json
-*.vocab
-*.model
-*.index
+!qwen7B/bin/
+!qwen7B/include/
+!qwen7B/lib/
+!qwen7B/pyvenv.cfg
+!qwen7B/share/

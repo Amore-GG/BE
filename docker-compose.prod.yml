@@ -73,10 +73,10 @@ services:
   
 
   scenario-qwen-api:
-    image: ghcr.io/amore-gg/amore-ai-video-qwen:latest
-    container_name: video-qwen-api
+    image: ghcr.io/amore-gg/amore-ai-scenario-qwen-api:latest
+    container_name: scenario-qwen-api
     ports:
-      - "3000:3000"
+      - "3000:3000"  # 4100:4100은 제거, 오직 3000 포트만 사용
     environment:
       - ENV=prod
       - PYTHONUNBUFFERED=1
