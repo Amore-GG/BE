@@ -42,10 +42,12 @@ MODEL_ID = os.environ.get("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5")
 
 # 오디오 저장 폴더
 OUTPUT_DIR = "generated_audio"
+SHARED_DIR = "shared/tts"  # 다른 서비스와 공유되는 폴더
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(SHARED_DIR, exist_ok=True)
 
 # 파일 자동 삭제 설정 (시간 단위)
-FILE_MAX_AGE_HOURS = 1
+FILE_MAX_AGE_HOURS = 3
 
 
 def cleanup_old_files(directory: str, max_age_hours: int = FILE_MAX_AGE_HOURS):
@@ -70,6 +72,7 @@ async def periodic_cleanup():
     while True:
         await asyncio.sleep(1800)  # 30분
         cleanup_old_files(OUTPUT_DIR)
+        cleanup_old_files(SHARED_DIR)
 
 
 # Static 파일 서빙
@@ -82,10 +85,12 @@ async def startup_event():
     """서버 시작 시 초기화"""
     # 시작 시 오래된 파일 정리
     cleanup_old_files(OUTPUT_DIR)
+    cleanup_old_files(SHARED_DIR)
     
     # 백그라운드 정리 태스크 시작
     asyncio.create_task(periodic_cleanup())
     print(f"[Cleanup] 자동 파일 정리 활성화 ({FILE_MAX_AGE_HOURS}시간 이상 파일 삭제)")
+    print(f"[Shared] TTS 파일이 {SHARED_DIR}에도 저장됩니다")
 
 
 class TTSRequest(BaseModel):
@@ -102,6 +107,7 @@ class TTSResponse(BaseModel):
     success: bool
     audio_url: str
     filename: str
+    shared_path: str  # 다른 서비스에서 접근 가능한 경로
 
 
 @app.get("/")
@@ -151,15 +157,26 @@ async def generate_tts(request: TTSRequest):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"tts_{timestamp}.mp3"
         filepath = os.path.join(OUTPUT_DIR, filename)
+        shared_filepath = os.path.join(SHARED_DIR, filename)
 
+        # 오디오 데이터를 메모리에 먼저 저장
+        audio_data = b""
+        for chunk in audio_stream:
+            audio_data += chunk
+
+        # 기본 폴더에 저장
         with open(filepath, "wb") as f:
-            for chunk in audio_stream:
-                f.write(chunk)
+            f.write(audio_data)
+
+        # shared 폴더에도 저장 (다른 서비스에서 접근 가능)
+        with open(shared_filepath, "wb") as f:
+            f.write(audio_data)
 
         return TTSResponse(
             success=True,
             audio_url=f"/audio/{filename}",
-            filename=filename
+            filename=filename,
+            shared_path=f"/app/shared/tts/{filename}"
         )
 
     except Exception as e:

@@ -40,6 +40,7 @@ services:
       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
     volumes:
       - elevenlabs_output:/app/generated_audio
+      - shared_media:/app/shared
     restart: unless-stopped
 
   video-qwen-api:
