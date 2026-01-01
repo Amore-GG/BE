@@ -1,9 +1,13 @@
 {
   "85": {
     "inputs": {
-      "UNKNOWN": "fp16"
+      "mmaudio_model": "mmaudio_large_44k_v2_fp16.safetensors",
+      "base_precision": "fp16"
     },
-    "_meta": {}
+    "class_type": "MMAudioModelLoader",
+    "_meta": {
+      "title": "MMAudio ModelLoader"
+    }
   },
   "91": {
     "inputs": {
@@ -23,7 +27,17 @@
   },
   "92": {
     "inputs": {
-      "UNKNOWN": true,
+      "duration": [
+        "105",
+        7
+      ],
+      "steps": 25,
+      "cfg": 4.5,
+      "seed": 7,
+      "prompt": "by the road that passes by a car",
+      "negative_prompt": "speach",
+      "mask_away_clip": false,
+      "force_offload": true,
       "mmaudio_model": [
         "85",
         0
@@ -35,13 +49,12 @@
       "images": [
         "91",
         0
-      ],
-      "duration": [
-        "105",
-        7
       ]
     },
-    "_meta": {}
+    "class_type": "MMAudioSampler",
+    "_meta": {
+      "title": "MMAudio Sampler"
+    }
   },
   "97": {
     "inputs": {
@@ -87,9 +100,16 @@
   },
   "102": {
     "inputs": {
-      "UNKNOWN": "fp16"
+      "vae_model": "mmaudio_vae_44k_fp16.safetensors",
+      "synchformer_model": "mmaudio_synchformer_fp16.safetensors",
+      "clip_model": "apple_DFN5B-CLIP-ViT-H-14-384_fp16.safetensors",
+      "mode": "44k",
+      "precision": "fp16"
     },
-    "_meta": {}
+    "class_type": "MMAudioFeatureUtilsLoader",
+    "_meta": {
+      "title": "MMAudio FeatureUtilsLoader"
+    }
   },
   "105": {
     "inputs": {
