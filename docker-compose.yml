@@ -1,82 +1,82 @@
 version: "3.8"
 
 services:
-  # voice-api:
-  #   build:
-  #     context: ./voice/zonos_api_package
-  #     dockerfile: Dockerfile
-  #   container_name: voice-api-dev
-  #   ports:
-  #     - "1000:1000"
-  #   environment:
-  #     - ENV=dev
-  #     - PYTHONUNBUFFERED=1
-  #   volumes:
-  #     - voice_output:/app/generated_audio
-  #   restart: unless-stopped
+  voice-api:
+    build:
+      context: ./voice/zonos_api_package
+      dockerfile: Dockerfile
+    container_name: voice-api-dev
+    ports:
+      - "1000:1000"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - voice_output:/app/generated_audio
+    restart: unless-stopped
 
-  # lip-api:
-  #   build:
-  #     context: ./lip/Wav2Lip-master
-  #     dockerfile: Dockerfile
-  #   container_name: lip-api-dev
-  #   ports:
-  #     - "2000:2000"
-  #   environment:
-  #     - ENV=dev
-  #     - PYTHONUNBUFFERED=1
-  #   volumes:
-  #     - lip_output:/app/results
-  #     - lip_uploads:/app/uploads
-  #   restart: unless-stopped
+  lip-api:
+    build:
+      context: ./lip/Wav2Lip-master
+      dockerfile: Dockerfile
+    container_name: lip-api-dev
+    ports:
+      - "2000:2000"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - lip_output:/app/results
+      - lip_uploads:/app/uploads
+    restart: unless-stopped
 
-  # elevenlabs-api:
-  #   build:
-  #     context: ./voice/eleven_labs
-  #     dockerfile: Dockerfile
-  #   container_name: elevenlabs-api-dev
-  #   ports:
-  #     - "1100:1100"
-  #   environment:
-  #     - ENV=dev
-  #     - PYTHONUNBUFFERED=1
-  #     - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
-  #   volumes:
-  #     - elevenlabs_output:/app/generated_audio
-  #   restart: unless-stopped
+  elevenlabs-api:
+    build:
+      context: ./voice/eleven_labs
+      dockerfile: Dockerfile
+    container_name: elevenlabs-api-dev
+    ports:
+      - "1100:1100"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+    volumes:
+      - elevenlabs_output:/app/generated_audio
+    restart: unless-stopped
 
-  # video-qwen-api:
-  #   build:
-  #     context: ./video/image/qwen
-  #     dockerfile: Dockerfile
-  #   container_name: video-qwen-api-dev
-  #   ports:
-  #     - "4100:4100"
-  #   environment:
-  #     - ENV=dev
-  #     - PYTHONUNBUFFERED=1
-  #     - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8000}
-  #   volumes:
-  #     - qwen_uploads:/app/uploads
-  #     - qwen_outputs:/app/outputs
-  #   restart: unless-stopped
+  video-qwen-api:
+    build:
+      context: ./video/image/qwen
+      dockerfile: Dockerfile
+    container_name: video-qwen-api-dev
+    ports:
+      - "4100:4100"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8000}
+    volumes:
+      - qwen_uploads:/app/uploads
+      - qwen_outputs:/app/outputs
+    restart: unless-stopped
 
-  # video-i2v-api:
-  #   build:
-  #     context: ./video/i2v/wan2
-  #     dockerfile: Dockerfile
-  #   container_name: video-i2v-api-dev
-  #   ports:
-  #     - "4200:4200"
-  #   environment:
-  #     - ENV=dev
-  #     - PYTHONUNBUFFERED=1
-  #     - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8000}
-  #   volumes:
-  #     - i2v_uploads:/app/uploads
-  #     - i2v_outputs:/app/outputs
-  #   restart: unless-stopped
-  scenario-qwen-api:
+  video-i2v-api:
+    build:
+      context: ./video/i2v/wan2
+      dockerfile: Dockerfile
+    container_name: video-i2v-api-dev
+    ports:
+      - "4200:4200"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8000}
+    volumes:
+      - i2v_uploads:/app/uploads
+      - i2v_outputs:/app/outputs
+    restart: unless-stopped
+  scenario-exaone-api:
     build:
       context: ./scenario/Qwen2.5-VL-7B-Instruct
       dockerfile: Dockerfile

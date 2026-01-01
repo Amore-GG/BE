@@ -1,0 +1,77 @@
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# 가상환경
+venv/
+env/
+.venv/
+.env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-*
+
+# 환경변수/시크릿
+.env
+*.env
+.env.local
+.env.*.local
+
+# 로그
+*.log
+logs/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# 업로드/출력 폴더
+uploads/
+outputs/
+
+# 모델 파일 (대용량, HuggingFace 캐시에서 다운로드)
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.onnx
+*.model
+
+# HuggingFace 캐시
+.cache/
+huggingface/
+
+# 압축 파일
+*.tar
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# pytest
+.pytest_cache/
+htmlcov/
+.coverage
+
+# mypy
+.mypy_cache/
+

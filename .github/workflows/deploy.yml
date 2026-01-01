@@ -12,176 +12,177 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: amore-gg/amore-ai
+
 jobs:
   # ----------------------------
-  # 1) Voice 이미지 빌드 & 푸시 (임시 비활성화)
+  # 1) Voice 이미지 빌드 & 푸시
   # ----------------------------
-  # build-voice:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login GHCR
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #     - name: Build & Push (voice)
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: ./voice/zonos_api_package
-  #         push: true
-  #         tags: |
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-voice:latest
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-voice:${{ github.sha }}
-  #         cache-from: type=gha
-  #         cache-to: type=gha,mode=max
+  build-voice:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+  
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+  
+      - name: Build & Push (voice)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./voice/zonos_api_package
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-voice:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-voice:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ----------------------------
-  # 2) Lip 이미지 빌드 & 푸시 (임시 비활성화)
+  # 2) Lip 이미지 빌드 & 푸시 
   # ----------------------------
-  # build-lip:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login GHCR
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #     - name: Build & Push (lip)
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: ./lip/Wav2Lip-master
-  #         push: true
-  #         tags: |
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-lip:latest
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-lip:${{ github.sha }}
-  #         cache-from: type=gha
-  #         cache-to: type=gha,mode=max
+  build-lip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+  
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+  
+      - name: Build & Push (lip)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./lip/Wav2Lip-master
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-lip:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-lip:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ----------------------------
-  # 3) ElevenLabs 이미지 빌드 & 푸시 (임시 비활성화)
+  # 3) ElevenLabs 이미지 빌드 & 푸시
   # ----------------------------
-  # build-elevenlabs:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login GHCR
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #     - name: Build & Push (elevenlabs)
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: ./voice/eleven_labs
-  #         push: true
-  #         tags: |
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-elevenlabs:latest
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-elevenlabs:${{ github.sha }}
-  #         cache-from: type=gha
-  #         cache-to: type=gha,mode=max
+  build-elevenlabs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+  
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+  
+      - name: Build & Push (elevenlabs)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./voice/eleven_labs
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-elevenlabs:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-elevenlabs:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ----------------------------
-  # 4) Video Qwen 이미지 빌드 & 푸시 (임시 비활성화)
+  # 4) Video Qwen 이미지 빌드 & 푸시
   # ----------------------------
-  # build-video-qwen:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login GHCR
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #     - name: Build & Push (video-qwen)
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: ./video/image/qwen
-  #         push: true
-  #         tags: |
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-qwen:latest
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-qwen:${{ github.sha }}
-  #         cache-from: type=gha
-  #         cache-to: type=gha,mode=max
+  build-video-qwen:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+  
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+  
+      - name: Build & Push (video-qwen)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./video/image/qwen
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-qwen:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-qwen:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ----------------------------
-  # 5) Video I2V (Wan2) 이미지 빌드 & 푸시 (임시 비활성화)
+  # 5) Video I2V (Wan2) 이미지 빌드 & 푸시
   # ----------------------------
-  # build-video-i2v:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #
-  #     - name: Login GHCR
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-  #
-  #     - name: Build & Push (video-i2v)
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: ./video/i2v/wan2
-  #         push: true
-  #         tags: |
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-i2v:latest
-  #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-i2v:${{ github.sha }}
-  #         cache-from: type=gha
-  #         cache-to: type=gha,mode=max
+  build-video-i2v:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+  
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+  
+      - name: Build & Push (video-i2v)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./video/i2v/wan2
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-i2v:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-video-i2v:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ----------------------------
-  # 6) Scenario(Qwen2.5-VL-7B-Instruct) 이미지 빌드 & 푸시 (유일하게 활성화)
+  # 6) Scenario(Exaone) 이미지 빌드 & 푸시
   # ----------------------------
-  build-scenario-qwen:
+  build-scenario-exaone:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -200,23 +201,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Push (scenario-qwen-api)
+      - name: Build & Push (scenario-exaone-api)
         uses: docker/build-push-action@v5
         with:
-          context: ./scenario/Qwen2.5-VL-7B-Instruct
-          dockerfile: ./scenario/Qwen2.5-VL-7B-Instruct/Dockerfile
+          context: ./scenario/exaone
+          dockerfile: ./scenario/exaone/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-scenario-qwen-api:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-scenario-qwen-api:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-scenario-exaone-api:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-scenario-exaone-api:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   # ----------------------------
-  # 7) EC2 배포: scenario만 배포, 나머지 서비스 미포함
+  # 7) EC2 배포
   # ----------------------------
   deploy:
-    needs: [build-scenario-qwen]
+    needs: [build-scenario-exaone]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to EC2 (docker compose pull & up)
@@ -237,3 +238,4 @@ jobs:
 
             docker image prune -f
             echo "Deployment completed at $(date)"
+

@@ -1,0 +1,57 @@
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 가상환경
+venv/
+env/
+.venv/
+.env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# 테스트/문서
+tests/
+*.md
+!requirements.txt
+
+# 로그
+*.log
+
+# 로컬 설정
+.env
+*.env
+
+# macOS
+.DS_Store
+
+# 업로드/출력 폴더 (런타임 생성)
+uploads/
+outputs/
+
+# 모델 캐시 (HuggingFace에서 다운로드)
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.onnx
+
+# 기타 불필요 파일
+*.tar
+*.tar.gz
+*.zip
+*.7z
+

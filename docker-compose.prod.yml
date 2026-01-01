@@ -72,20 +72,17 @@ services:
   #   restart: unless-stopped
   
 
-  scenario-qwen-api:
-    image: ghcr.io/amore-gg/amore-ai-scenario-qwen-api:latest
-    container_name: scenario-qwen-api
+  scenario-exaone-api:
+    image: ghcr.io/amore-gg/amore-ai-scenario-exaone-api:latest
+    container_name: scenario-exaone-api
     ports:
-      - "3000:3000"  # 4100:4100은 제거, 오직 3000 포트만 사용
+      - "3000:3000"
     environment:
       - ENV=prod
       - PYTHONUNBUFFERED=1
-      - COMFYUI_URL=${COMFYUI_URL}
-      - MODEL_DIR=/app/safetensors
     volumes:
-      - /home/ubuntu/amore-ai/scenario/safetensors:/app/safetensors
-      - qwen2.5_uploads:/app/uploads
-      - qwen2.5_outputs:/app/outputs
+      - exaone_uploads:/app/uploads
+      - exaone_outputs:/app/outputs
     restart: unless-stopped
 
 volumes:
@@ -97,5 +94,5 @@ volumes:
   qwen_outputs:
   i2v_uploads:
   i2v_outputs:
-  qwen2.5_uploads:
-  qwen2.5_outputs:
+  exaone_uploads:
+  exaone_outputs:
