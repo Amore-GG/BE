@@ -42,10 +42,12 @@ WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/GG_wan2_2_14B_i2v(1).json"
 UPLOAD_DIR = "uploads"
 OUTPUT_DIR = "outputs"
 WORKFLOW_DIR = "workflows"
+SHARED_DIR = "shared"
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(WORKFLOW_DIR, exist_ok=True)
+os.makedirs(SHARED_DIR, exist_ok=True)
 
 # ComfyUI 클라이언트
 client = ComfyUIClient(COMFYUI_URL)
@@ -90,6 +92,19 @@ class I2VRequest(BaseModel):
     length: Optional[int] = Field(121, description="프레임 수 (기본: 121, 약 6초)")
     steps: Optional[int] = Field(8, description="샘플링 스텝 (기본: 8)")
     cfg: Optional[float] = Field(1.0, description="CFG 스케일 (기본: 1.0)")
+
+
+class SessionI2VRequest(BaseModel):
+    """세션 기반 이미지 → 비디오 요청"""
+    session_id: str = Field(..., description="세션 ID")
+    prompt: str = Field(..., description="영상 생성 프롬프트")
+    image_filename: str = Field(..., description="세션 내 입력 이미지 파일명")
+    output_filename: Optional[str] = Field(None, description="출력 파일명")
+    width: Optional[int] = Field(512, description="영상 너비")
+    height: Optional[int] = Field(512, description="영상 높이")
+    length: Optional[int] = Field(121, description="프레임 수")
+    steps: Optional[int] = Field(8, description="샘플링 스텝")
+    cfg: Optional[float] = Field(1.0, description="CFG 스케일")
 
 
 class I2VResponse(BaseModel):
@@ -873,6 +888,201 @@ async def delete_project(project_id: str):
         "success": True,
         "message": f"프로젝트 {project_id} 삭제 완료 ({file_count}개 파일 삭제됨)"
     }
+
+
+# ============================================
+# 세션 기반 API 엔드포인트
+# ============================================
+
+def get_session_dir(session_id: str) -> str:
+    """세션 디렉토리 경로 반환 (없으면 생성)"""
+    session_dir = os.path.join(SHARED_DIR, session_id)
+    os.makedirs(session_dir, exist_ok=True)
+    return session_dir
+
+
+@app.post("/session/upload", tags=["Session"])
+async def session_upload_image(
+    session_id: str = Form(..., description="세션 ID"),
+    image: UploadFile = File(..., description="업로드할 이미지"),
+    filename: Optional[str] = Form(None, description="저장할 파일명")
+):
+    """
+    세션 폴더에 이미지 업로드
+    """
+    try:
+        session_dir = get_session_dir(session_id)
+        
+        ext = os.path.splitext(image.filename)[1] or ".png"
+        if filename:
+            save_filename = filename if "." in filename else f"{filename}{ext}"
+        else:
+            unique_id = str(uuid.uuid4())[:8]
+            save_filename = f"upload_{unique_id}{ext}"
+        
+        filepath = os.path.join(session_dir, save_filename)
+        
+        with open(filepath, "wb") as f:
+            content = await image.read()
+            f.write(content)
+        
+        # ComfyUI에도 업로드
+        try:
+            await client.upload_image(filepath, save_filename)
+        except Exception as e:
+            print(f"ComfyUI 업로드 실패 (나중에 재시도): {e}")
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            "filename": save_filename,
+            "message": f"세션 '{session_id}'에 이미지 업로드 완료"
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"업로드 실패: {str(e)}")
+
+
+class SessionI2VResponse(BaseModel):
+    """세션 기반 I2V 응답"""
+    success: bool
+    output_file: str
+    session_id: str
+    message: str
+    processing_time: float
+
+
+@app.post("/session/generate", response_model=SessionI2VResponse, tags=["Session"])
+async def session_generate_video(request: SessionI2VRequest):
+    """
+    세션 기반 이미지 → 비디오 생성
+    
+    세션 폴더의 이미지를 입력으로 사용하고, 결과도 세션 폴더에 저장합니다.
+    """
+    start_time = time.time()
+    
+    try:
+        session_dir = get_session_dir(request.session_id)
+        
+        # 워크플로우 로드
+        if not os.path.exists(WORKFLOW_PATH):
+            raise HTTPException(status_code=500, detail="워크플로우 파일이 없습니다")
+        
+        workflow = client.load_workflow(WORKFLOW_PATH)
+        
+        # 세션 폴더에서 이미지 경로 확인
+        image_path = os.path.join(session_dir, request.image_filename)
+        if not os.path.exists(image_path):
+            raise HTTPException(status_code=404, detail=f"세션 내 이미지를 찾을 수 없습니다: {request.image_filename}")
+        
+        # ComfyUI에 업로드
+        await client.upload_image(image_path, request.image_filename)
+        
+        # 워크플로우 업데이트
+        workflow = client.update_i2v_workflow(
+            workflow,
+            image_filename=request.image_filename,
+            prompt=request.prompt,
+            width=request.width,
+            height=request.height,
+            length=request.length,
+            steps=request.steps,
+            cfg=request.cfg
+        )
+        workflow = client.randomize_seed(workflow)
+        
+        # 실행 (영상 생성은 오래 걸림)
+        result = await client.execute_workflow(workflow, timeout=1800)
+        
+        # 결과 비디오 가져오기
+        outputs = result.get("outputs", {})
+        output_videos = []
+        
+        for node_id, node_output in outputs.items():
+            if "gifs" in node_output:
+                for vid in node_output["gifs"]:
+                    output_videos.append(vid)
+        
+        if not output_videos:
+            raise HTTPException(status_code=500, detail="출력 비디오가 없습니다")
+        
+        # 비디오 저장 (세션 폴더에)
+        vid_info = output_videos[0]
+        vid_bytes = await client.get_video(
+            vid_info["filename"],
+            vid_info.get("subfolder", ""),
+            vid_info.get("type", "output")
+        )
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        output_filename = request.output_filename or f"i2v_{timestamp}_{unique_id}.mp4"
+        if not output_filename.endswith(".mp4"):
+            output_filename += ".mp4"
+        output_path = os.path.join(session_dir, output_filename)
+        
+        with open(output_path, "wb") as f:
+            f.write(vid_bytes)
+        
+        processing_time = time.time() - start_time
+        
+        return SessionI2VResponse(
+            success=True,
+            output_file=output_filename,
+            session_id=request.session_id,
+            message=f"세션 '{request.session_id}'에 영상 저장 완료",
+            processing_time=round(processing_time, 2)
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] /session/generate 영상 생성 실패:")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"영상 생성 실패: {str(e)}")
+
+
+@app.get("/session/{session_id}/files", tags=["Session"])
+async def list_session_files(session_id: str):
+    """세션 폴더 내 파일 목록 조회"""
+    session_dir = os.path.join(SHARED_DIR, session_id)
+    
+    if not os.path.exists(session_dir):
+        return {"session_id": session_id, "files": [], "count": 0, "exists": False}
+    
+    files = []
+    for f in Path(session_dir).glob("*"):
+        if f.is_file():
+            files.append({
+                "filename": f.name,
+                "size_mb": round(f.stat().st_size / (1024 * 1024), 2),
+                "created": datetime.fromtimestamp(f.stat().st_ctime).isoformat()
+            })
+    files.sort(key=lambda x: x["created"], reverse=True)
+    
+    return {"session_id": session_id, "files": files, "count": len(files), "exists": True}
+
+
+@app.get("/session/{session_id}/file/{filename}", tags=["Session"])
+async def get_session_file(session_id: str, filename: str):
+    """세션 폴더 내 특정 파일 다운로드"""
+    filepath = os.path.join(SHARED_DIR, session_id, filename)
+    
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
+    
+    # 파일 확장자에 따라 미디어 타입 결정
+    if filename.endswith(".mp4"):
+        media_type = "video/mp4"
+    elif filename.endswith(".png"):
+        media_type = "image/png"
+    elif filename.endswith(".jpg") or filename.endswith(".jpeg"):
+        media_type = "image/jpeg"
+    else:
+        media_type = "application/octet-stream"
+    
+    return FileResponse(filepath, media_type=media_type, filename=filename)
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # 디렉토리 생성
-RUN mkdir -p uploads outputs workflows
+RUN mkdir -p uploads outputs workflows shared
 
 EXPOSE 4200
 

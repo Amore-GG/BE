@@ -59,6 +59,7 @@ services:
     volumes:
       - qwen_uploads:/app/uploads
       - qwen_outputs:/app/outputs
+      - shared_media:/app/shared
     restart: unless-stopped
 
   video-i2v-api:
@@ -75,6 +76,7 @@ services:
     volumes:
       - i2v_uploads:/app/uploads
       - i2v_outputs:/app/outputs
+      - shared_media:/app/shared
     restart: unless-stopped
   scenario-exaone-api:
     build:

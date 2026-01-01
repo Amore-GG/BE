@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-RUN mkdir -p uploads outputs workflows
+RUN mkdir -p uploads outputs workflows shared
 
 EXPOSE 4100
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "4100"]
