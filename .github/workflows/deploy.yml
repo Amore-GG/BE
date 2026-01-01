@@ -353,7 +353,7 @@ jobs:
   # 10) EC2 배포
   # ----------------------------
   deploy:
-    needs: [build-scenario-exaone, build-latentsync, build-mmaudio, build-merge-api, build-zimage]
+    needs: [build-video-i2v, build-video-qwen, build-elevenlabs, build-scenario-exaone, build-latentsync, build-mmaudio, build-merge-api, build-zimage]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to EC2 (docker compose pull & up)
