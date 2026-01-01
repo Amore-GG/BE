@@ -57,6 +57,12 @@ client = ComfyUIClient(COMFYUI_URL)
 FILE_MAX_AGE_HOURS = 2
 
 
+def log(message: str, level: str = "INFO"):
+    """타임스탬프가 포함된 로그 출력"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    print(f"[{timestamp}] [MMAudio] [{level}] {message}", flush=True)
+
+
 # ============================================
 # 유틸리티 함수
 # ============================================
@@ -235,24 +241,42 @@ async def generate_audio_form(
     """
     start_time = time.time()
     
+    log("=" * 60)
+    log("새 오디오 생성 요청 수신")
+    log(f"입력 파일: {video.filename}")
+    log(f"프레임레이트: {force_rate}fps")
+    log("=" * 60)
+    
     try:
         # 워크플로우 로드
         if not os.path.exists(WORKFLOW_PATH):
+            log(f"워크플로우 파일 없음: {WORKFLOW_PATH}", "ERROR")
             raise HTTPException(status_code=500, detail="워크플로우 파일이 없습니다")
         
         workflow = client.load_workflow(WORKFLOW_PATH)
         
         unique_id = str(uuid.uuid4())[:8]
+        log(f"작업 ID: {unique_id}")
         
         # 비디오 저장 및 업로드
+        log("1단계: 비디오 파일 저장 중...")
         video_ext = os.path.splitext(video.filename)[1] or ".mp4"
         video_filename = f"mmaudio_{unique_id}{video_ext}"
         video_path = os.path.join(UPLOAD_DIR, video_filename)
+        
+        video_content = await video.read()
+        video_size = len(video_content) / (1024 * 1024)  # MB
+        log(f"비디오 크기: {video_size:.2f}MB")
+        
         with open(video_path, "wb") as f:
-            f.write(await video.read())
+            f.write(video_content)
+        log(f"로컬 저장 완료: {video_path}")
+        
+        log("2단계: ComfyUI 서버에 업로드 중...")
         await client.upload_file(video_path, video_filename, file_type="video")
         
         # 워크플로우 업데이트
+        log("3단계: 워크플로우 설정 중...")
         workflow = client.update_mmaudio_workflow(
             workflow,
             video_filename=video_filename,
@@ -260,9 +284,11 @@ async def generate_audio_form(
         )
         
         # 실행
+        log("4단계: ComfyUI 워크플로우 실행 중...")
         result = await client.execute_workflow(workflow, timeout=1800)
         
         # 결과 비디오 가져오기 (오디오가 합쳐진 비디오)
+        log("5단계: 결과 비디오 다운로드 중...")
         outputs = result.get("outputs", {})
         output_videos = []
         
@@ -271,8 +297,10 @@ async def generate_audio_form(
                 if "gifs" in node_output:
                     for vid in node_output["gifs"]:
                         output_videos.append(vid)
+                        log(f"출력 비디오 발견: {vid.get('filename', 'unknown')}")
         
         if not output_videos:
+            log("출력 비디오가 없습니다!", "ERROR")
             raise HTTPException(status_code=500, detail="출력 비디오가 없습니다")
         
         # 첫 번째 출력 비디오 저장
@@ -283,6 +311,9 @@ async def generate_audio_form(
             vid_info.get("type", "output")
         )
         
+        output_size = len(vid_bytes) / (1024 * 1024)  # MB
+        log(f"다운로드 완료: {output_size:.2f}MB")
+        
         # 로컬에 저장
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_filename = f"mmaudio_{timestamp}_{unique_id}.mp4"
@@ -292,6 +323,12 @@ async def generate_audio_form(
             f.write(vid_bytes)
         
         processing_time = time.time() - start_time
+        
+        log("=" * 60)
+        log(f"오디오 생성 완료!", "SUCCESS")
+        log(f"출력 파일: {output_filename}")
+        log(f"총 처리 시간: {processing_time:.1f}초 ({processing_time/60:.1f}분)")
+        log("=" * 60)
         
         return MMAudioResponse(
             success=True,
@@ -304,8 +341,10 @@ async def generate_audio_form(
         raise
     except Exception as e:
         import traceback
-        print(f"[ERROR] 오디오 생성 실패:")
-        print(traceback.format_exc())
+        processing_time = time.time() - start_time
+        log(f"오류 발생! (경과 시간: {processing_time:.1f}초)", "ERROR")
+        log(f"오류 내용: {str(e)}", "ERROR")
+        print(traceback.format_exc(), flush=True)
         raise HTTPException(status_code=500, detail=f"오디오 생성 실패: {str(e)}")
 
 
