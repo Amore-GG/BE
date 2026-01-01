@@ -105,6 +105,7 @@ services:
     volumes:
       - latentsync_uploads:/app/uploads
       - latentsync_outputs:/app/outputs
+      - shared_media:/app/shared
     restart: unless-stopped
 
   mmaudio-api:
@@ -121,6 +122,23 @@ services:
     volumes:
       - mmaudio_uploads:/app/uploads
       - mmaudio_outputs:/app/outputs
+      - shared_media:/app/shared
+    restart: unless-stopped
+
+  merge-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: merge-api-dev
+    ports:
+      - "5000:5000"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - merge_uploads:/app/uploads
+      - merge_outputs:/app/outputs
+      - shared_media:/app/shared
     restart: unless-stopped
 
 volumes:
@@ -138,3 +156,6 @@ volumes:
   latentsync_outputs:
   mmaudio_uploads:
   mmaudio_outputs:
+  merge_uploads:
+  merge_outputs:
+  shared_media:

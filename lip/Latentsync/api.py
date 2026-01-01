@@ -43,10 +43,12 @@ WORKFLOW_PATH = os.getenv("WORKFLOW_PATH", "workflows/latentsync1.6.json")
 UPLOAD_DIR = "uploads"
 OUTPUT_DIR = "outputs"
 WORKFLOW_DIR = "workflows"
+SHARED_DIR = "shared"  # 공유 볼륨 (다른 서비스와 공유)
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(WORKFLOW_DIR, exist_ok=True)
+os.makedirs(SHARED_DIR, exist_ok=True)
 
 # ComfyUI 클라이언트
 client = ComfyUIClient(COMFYUI_URL)
@@ -96,12 +98,25 @@ class LipSyncRequest(BaseModel):
     fps: Optional[int] = Field(25, description="프레임레이트 (기본: 25)")
 
 
+class SessionLipSyncRequest(BaseModel):
+    """세션 기반 립싱크 생성 요청"""
+    session_id: str = Field(..., description="세션 ID (공유 폴더 내)")
+    video_filename: str = Field(..., description="세션 폴더 내 비디오 파일명")
+    audio_filename: str = Field(..., description="세션 폴더 내 오디오 파일명")
+    output_filename: Optional[str] = Field("lipsync.mp4", description="출력 파일명 (세션 폴더에 저장)")
+    seed: Optional[int] = Field(None, description="랜덤 시드")
+    lips_expression: Optional[float] = Field(1.5, description="입술 표현 강도")
+    inference_steps: Optional[int] = Field(20, description="추론 스텝")
+    fps: Optional[int] = Field(25, description="프레임레이트")
+
+
 class LipSyncResponse(BaseModel):
     """립싱크 생성 응답"""
     success: bool
     output_file: str
     message: str
     processing_time: float
+    session_id: Optional[str] = Field(None, description="세션 ID (세션 기반 요청시)")
 
 
 class UploadResponse(BaseModel):
@@ -470,6 +485,139 @@ async def list_outputs():
             })
     files.sort(key=lambda x: x["created"], reverse=True)
     return {"files": files, "count": len(files)}
+
+
+# ============================================
+# 세션 기반 엔드포인트 (공유 볼륨)
+# ============================================
+def get_session_dir(session_id: str) -> str:
+    """세션 디렉토리 경로 반환 (없으면 생성)"""
+    session_dir = os.path.join(SHARED_DIR, session_id)
+    os.makedirs(session_dir, exist_ok=True)
+    return session_dir
+
+
+@app.post("/session/generate", response_model=LipSyncResponse, tags=["Session"])
+async def session_generate_lipsync(request: SessionLipSyncRequest):
+    """
+    세션 기반 립싱크 생성
+    
+    - **session_id**: 세션 ID (공유 폴더 내 하위 폴더)
+    - **video_filename**: 세션 폴더 내 비디오 파일명
+    - **audio_filename**: 세션 폴더 내 오디오 파일명
+    - **output_filename**: 출력 파일명 (세션 폴더에 저장됨)
+    
+    다른 서비스에서 저장한 파일을 사용하고, 결과도 세션 폴더에 저장됩니다.
+    """
+    start_time = time.time()
+    
+    try:
+        session_dir = get_session_dir(request.session_id)
+        
+        # 세션 폴더에서 파일 찾기
+        video_path = os.path.join(session_dir, request.video_filename)
+        audio_path = os.path.join(session_dir, request.audio_filename)
+        
+        if not os.path.exists(video_path):
+            raise HTTPException(status_code=404, detail=f"비디오 파일을 찾을 수 없습니다: {request.video_filename}")
+        if not os.path.exists(audio_path):
+            raise HTTPException(status_code=404, detail=f"오디오 파일을 찾을 수 없습니다: {request.audio_filename}")
+        
+        # 워크플로우 로드
+        if not os.path.exists(WORKFLOW_PATH):
+            raise HTTPException(status_code=500, detail="워크플로우 파일이 없습니다")
+        
+        workflow = client.load_workflow(WORKFLOW_PATH)
+        
+        unique_id = str(uuid.uuid4())[:8]
+        
+        # ComfyUI에 업로드 (세션 폴더에서)
+        comfy_video_name = f"session_{request.session_id}_{request.video_filename}"
+        comfy_audio_name = f"session_{request.session_id}_{request.audio_filename}"
+        
+        await client.upload_file(video_path, comfy_video_name, file_type="video")
+        await client.upload_file(audio_path, comfy_audio_name, file_type="audio")
+        
+        # 워크플로우 업데이트
+        workflow = client.update_lipsync_workflow(
+            workflow,
+            video_filename=comfy_video_name,
+            audio_filename=comfy_audio_name,
+            seed=request.seed,
+            lips_expression=request.lips_expression,
+            inference_steps=request.inference_steps,
+            fps=request.fps
+        )
+        
+        # 실행
+        result = await client.execute_workflow(workflow, timeout=1800)
+        
+        # 결과 비디오 가져오기
+        outputs = result.get("outputs", {})
+        output_videos = []
+        
+        for node_id, node_output in outputs.items():
+            if isinstance(node_output, dict) and "gifs" in node_output:
+                for vid in node_output["gifs"]:
+                    output_videos.append(vid)
+        
+        if not output_videos:
+            raise HTTPException(status_code=500, detail="출력 비디오가 없습니다")
+        
+        # 비디오 저장 (세션 폴더에)
+        vid_info = output_videos[0]
+        vid_bytes = await client.get_video(
+            vid_info["filename"],
+            vid_info.get("subfolder", ""),
+            vid_info.get("type", "output")
+        )
+        
+        output_filename = request.output_filename or "lipsync.mp4"
+        if not output_filename.endswith(".mp4"):
+            output_filename += ".mp4"
+        output_path = os.path.join(session_dir, output_filename)
+        
+        with open(output_path, "wb") as f:
+            f.write(vid_bytes)
+        
+        processing_time = time.time() - start_time
+        
+        return LipSyncResponse(
+            success=True,
+            output_file=output_filename,
+            message=f"세션 '{request.session_id}'에 립싱크 영상 저장 완료",
+            processing_time=round(processing_time, 2),
+            session_id=request.session_id
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] 세션 립싱크 생성 실패:")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"립싱크 생성 실패: {str(e)}")
+
+
+@app.get("/session/{session_id}/files", tags=["Session"])
+async def list_session_files(session_id: str):
+    """세션 폴더 내 파일 목록 조회"""
+    session_dir = os.path.join(SHARED_DIR, session_id)
+    
+    if not os.path.exists(session_dir):
+        return {"session_id": session_id, "files": [], "count": 0, "exists": False}
+    
+    files = []
+    for f in Path(session_dir).glob("*"):
+        if f.is_file():
+            files.append({
+                "filename": f.name,
+                "size_mb": round(f.stat().st_size / (1024 * 1024), 2),
+                "created": datetime.fromtimestamp(f.stat().st_ctime).isoformat()
+            })
+    files.sort(key=lambda x: x["created"], reverse=True)
+    
+    return {"session_id": session_id, "files": files, "count": len(files), "exists": True}
 
 
 # ============================================
