@@ -5,10 +5,9 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 
-# FFmpeg 설치
+# 시스템 패키지
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ffmpeg \
         curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -18,13 +17,13 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# 소스 코드 복사
+# 소스 코드 및 워크플로우 복사
 COPY . .
 
 # 디렉토리 생성
-RUN mkdir -p uploads outputs
+RUN mkdir -p outputs workflows shared
 
-EXPOSE 5000
+EXPOSE 4400
 
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "4400"]
 

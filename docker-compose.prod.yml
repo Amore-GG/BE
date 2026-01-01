@@ -128,6 +128,20 @@ services:
       - shared_media:/app/shared
     restart: unless-stopped
 
+  zimage-api:
+    image: ghcr.io/amore-gg/amore-ai-zimage-api:latest
+    container_name: zimage-api
+    ports:
+      - "4400:4400"
+    environment:
+      - ENV=prod
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL}
+    volumes:
+      - zimage_outputs:/app/outputs
+      - shared_media:/app/shared
+    restart: unless-stopped
+
 volumes:
   # voice_output:  # 임시 비활성화
   # lip_output:    # 임시 비활성화
@@ -145,4 +159,5 @@ volumes:
   mmaudio_outputs:
   merge_uploads:
   merge_outputs:
+  zimage_outputs:
   shared_media:

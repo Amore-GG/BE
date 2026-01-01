@@ -141,6 +141,22 @@ services:
       - shared_media:/app/shared
     restart: unless-stopped
 
+  zimage-api:
+    build:
+      context: ./video/image/z_image
+      dockerfile: Dockerfile
+    container_name: zimage-api-dev
+    ports:
+      - "4400:4400"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8000}
+    volumes:
+      - zimage_outputs:/app/outputs
+      - shared_media:/app/shared
+    restart: unless-stopped
+
 volumes:
   voice_output:
   lip_output:
@@ -158,4 +174,5 @@ volumes:
   mmaudio_outputs:
   merge_uploads:
   merge_outputs:
+  zimage_outputs:
   shared_media:
