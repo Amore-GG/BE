@@ -145,9 +145,9 @@ services:
     restart: unless-stopped
 
 volumes:
-  # voice_output:  # 임시 비활성화
-  # lip_output:    # 임시 비활성화
-  # lip_uploads:   # 임시 비활성화
+  # voice_output:  # 비활성화
+  # lip_output:    # 비활성화
+  # lip_uploads:   # 비활성화
   elevenlabs_output:
   qwen_uploads:
   qwen_outputs:
