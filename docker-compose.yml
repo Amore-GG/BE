@@ -106,6 +106,23 @@ services:
       - latentsync_uploads:/app/uploads
       - latentsync_outputs:/app/outputs
     restart: unless-stopped
+
+  mmaudio-api:
+    build:
+      context: ./video/sound/mmaudio
+      dockerfile: Dockerfile
+    container_name: mmaudio-api-dev
+    ports:
+      - "4300:4300"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8000}
+    volumes:
+      - mmaudio_uploads:/app/uploads
+      - mmaudio_outputs:/app/outputs
+    restart: unless-stopped
+
 volumes:
   voice_output:
   lip_output:
@@ -119,3 +136,5 @@ volumes:
   exaone_outputs:
   latentsync_uploads:
   latentsync_outputs:
+  mmaudio_uploads:
+  mmaudio_outputs:

@@ -99,6 +99,20 @@ services:
       - latentsync_outputs:/app/outputs
     restart: unless-stopped
 
+  mmaudio-api:
+    image: ghcr.io/amore-gg/amore-ai-mmaudio-api:latest
+    container_name: mmaudio-api
+    ports:
+      - "4300:4300"
+    environment:
+      - ENV=prod
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL}
+    volumes:
+      - mmaudio_uploads:/app/uploads
+      - mmaudio_outputs:/app/outputs
+    restart: unless-stopped
+
 volumes:
   # voice_output:  # 임시 비활성화
   # lip_output:    # 임시 비활성화
@@ -112,3 +126,5 @@ volumes:
   exaone_outputs:
   latentsync_uploads:
   latentsync_outputs:
+  mmaudio_uploads:
+  mmaudio_outputs:
