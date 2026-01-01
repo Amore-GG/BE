@@ -85,6 +85,20 @@ services:
       - exaone_outputs:/app/outputs
     restart: unless-stopped
 
+  latentsync-api:
+    image: ghcr.io/amore-gg/amore-ai-latentsync-api:latest
+    container_name: latentsync-api
+    ports:
+      - "2100:2100"
+    environment:
+      - ENV=prod
+      - PYTHONUNBUFFERED=1
+      - COMFYUI_URL=${COMFYUI_URL}
+    volumes:
+      - latentsync_uploads:/app/uploads
+      - latentsync_outputs:/app/outputs
+    restart: unless-stopped
+
 volumes:
   # voice_output:  # 임시 비활성화
   # lip_output:    # 임시 비활성화
@@ -96,3 +110,5 @@ volumes:
   i2v_outputs:
   exaone_uploads:
   exaone_outputs:
+  latentsync_uploads:
+  latentsync_outputs:

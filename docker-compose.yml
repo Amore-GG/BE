@@ -78,20 +78,34 @@ services:
     restart: unless-stopped
   scenario-exaone-api:
     build:
-      context: ./scenario/Qwen2.5-VL-7B-Instruct
+      context: ./scenario/exaone
       dockerfile: Dockerfile
-    container_name: scenario-qwen-api-dev
+    container_name: scenario-exaone-api-dev
     ports:
       - "3000:3000"
     environment:
       - ENV=dev
       - PYTHONUNBUFFERED=1
+    volumes:
+      - exaone_uploads:/app/uploads
+      - exaone_outputs:/app/outputs
+    restart: unless-stopped
+
+  latentsync-api:
+    build:
+      context: ./lip/Latentsync
+      dockerfile: Dockerfile
+    container_name: latentsync-api-dev
+    ports:
+      - "2100:2100"
+    environment:
+      - ENV=dev
+      - PYTHONUNBUFFERED=1
       - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8000}
     volumes:
-      - qwen2.5_uploads:/app/uploads
-      - qwen2.5_outputs:/app/outputs
+      - latentsync_uploads:/app/uploads
+      - latentsync_outputs:/app/outputs
     restart: unless-stopped
-  # 위의 서비스만 활성화, 나머지는 모두 주석처리됨
 volumes:
   voice_output:
   lip_output:
@@ -101,5 +115,7 @@ volumes:
   qwen_outputs:
   i2v_uploads:
   i2v_outputs:
-  qwen2.5_uploads:
-  qwen2.5_outputs:
+  exaone_uploads:
+  exaone_outputs:
+  latentsync_uploads:
+  latentsync_outputs:

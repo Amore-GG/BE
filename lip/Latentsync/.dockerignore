@@ -1,0 +1,39 @@
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 가상환경
+venv/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# 로그
+*.log
+
+# 로컬 설정
+.env
+*.env
+
+# macOS
+.DS_Store
+
+# 업로드/출력 폴더
+uploads/
+outputs/
+
+# 기타
+*.tar
+*.tar.gz
+*.zip
+

@@ -1,0 +1,92 @@
+{
+  "37": {
+    "inputs": {
+      "audio": "ElevenLabs_2025-12-31T13_48_21_Anna Kim - Tender, Calm and Clear_pvc_sp100_s50_sb75_t2-5.mp3",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "오디오 로드"
+    }
+  },
+  "40": {
+    "inputs": {
+      "video": "14B_00030.mp4",
+      "force_rate": 25,
+      "custom_width": 0,
+      "custom_height": 768,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "class_type": "VHS_LoadVideo",
+    "_meta": {
+      "title": "Load Video (Upload) 🎥🅥🅗🅢"
+    }
+  },
+  "41": {
+    "inputs": {
+      "frame_rate": 25,
+      "loop_count": 0,
+      "filename_prefix": "video/latentsync/latentsync",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "54",
+        0
+      ],
+      "audio": [
+        "54",
+        1
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "54": {
+    "inputs": {
+      "seed": 1663,
+      "lips_expression": 1.5,
+      "inference_steps": 20,
+      "images": [
+        "55",
+        0
+      ],
+      "audio": [
+        "55",
+        1
+      ]
+    },
+    "class_type": "LatentSyncNode",
+    "_meta": {
+      "title": "LatentSync1.6 Node"
+    }
+  },
+  "55": {
+    "inputs": {
+      "mode": "normal",
+      "fps": 25,
+      "silent_padding_sec": 0.5,
+      "images": [
+        "40",
+        0
+      ],
+      "audio": [
+        "37",
+        0
+      ]
+    },
+    "class_type": "VideoLengthAdjuster",
+    "_meta": {
+      "title": "Video Length Adjuster"
+    }
+  }
+}

@@ -48,7 +48,7 @@ jobs:
   #         cache-to: type=gha,mode=max
 
   # # ----------------------------
-  # # 2) Lip 이미지 빌드 & 푸시 
+  # # 2) Lip (Wav2Lip) 이미지 빌드 & 푸시 (임시 비활성화)
   # # ----------------------------
   # build-lip:
   #   runs-on: ubuntu-latest
@@ -58,17 +58,17 @@ jobs:
   #   steps:
   #     - name: Checkout
   #       uses: actions/checkout@v4
-  
+  #
   #     - name: Set up Docker Buildx
   #       uses: docker/setup-buildx-action@v3
-  
+  #
   #     - name: Login GHCR
   #       uses: docker/login-action@v3
   #       with:
   #         registry: ${{ env.REGISTRY }}
   #         username: ${{ github.actor }}
   #         password: ${{ secrets.GITHUB_TOKEN }}
-  
+  #
   #     - name: Build & Push (lip)
   #       uses: docker/build-push-action@v5
   #       with:
@@ -79,6 +79,40 @@ jobs:
   #           ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-lip:${{ github.sha }}
   #         cache-from: type=gha
   #         cache-to: type=gha,mode=max
+
+  # ----------------------------
+  # 2-1) Lip (LatentSync) 이미지 빌드 & 푸시
+  # ----------------------------
+  build-latentsync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push (latentsync-api)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./lip/Latentsync
+          dockerfile: ./lip/Latentsync/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-latentsync-api:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-latentsync-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # # ----------------------------
   # # 3) ElevenLabs 이미지 빌드 & 푸시
@@ -217,7 +251,7 @@ jobs:
   # 7) EC2 배포
   # ----------------------------
   deploy:
-    needs: [build-scenario-exaone]
+    needs: [build-scenario-exaone, build-latentsync]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to EC2 (docker compose pull & up)
