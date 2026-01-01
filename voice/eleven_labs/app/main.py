@@ -42,9 +42,18 @@ MODEL_ID = os.environ.get("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5")
 
 # 오디오 저장 폴더
 OUTPUT_DIR = "generated_audio"
-SHARED_DIR = "shared/tts"  # 다른 서비스와 공유되는 폴더
+SHARED_DIR = "shared"  # 세션 기반 공유 폴더 (상위)
+SHARED_TTS_DIR = "shared/tts"  # 일반 TTS 공유 폴더
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(SHARED_DIR, exist_ok=True)
+os.makedirs(SHARED_TTS_DIR, exist_ok=True)
+
+
+def get_session_dir(session_id: str) -> str:
+    """세션 디렉토리 경로 반환 (없으면 생성)"""
+    session_dir = os.path.join(SHARED_DIR, session_id)
+    os.makedirs(session_dir, exist_ok=True)
+    return session_dir
 
 # 파일 자동 삭제 설정 (시간 단위)
 FILE_MAX_AGE_HOURS = 3
@@ -72,7 +81,7 @@ async def periodic_cleanup():
     while True:
         await asyncio.sleep(1800)  # 30분
         cleanup_old_files(OUTPUT_DIR)
-        cleanup_old_files(SHARED_DIR)
+        cleanup_old_files(SHARED_TTS_DIR)
 
 
 # Static 파일 서빙
@@ -85,12 +94,13 @@ async def startup_event():
     """서버 시작 시 초기화"""
     # 시작 시 오래된 파일 정리
     cleanup_old_files(OUTPUT_DIR)
-    cleanup_old_files(SHARED_DIR)
+    cleanup_old_files(SHARED_TTS_DIR)
     
     # 백그라운드 정리 태스크 시작
     asyncio.create_task(periodic_cleanup())
     print(f"[Cleanup] 자동 파일 정리 활성화 ({FILE_MAX_AGE_HOURS}시간 이상 파일 삭제)")
-    print(f"[Shared] TTS 파일이 {SHARED_DIR}에도 저장됩니다")
+    print(f"[Shared] 일반 TTS: {SHARED_TTS_DIR}")
+    print(f"[Shared] 세션 기반 TTS: {SHARED_DIR}/{{session_id}}/")
 
 
 class TTSRequest(BaseModel):
@@ -110,10 +120,43 @@ class TTSResponse(BaseModel):
     shared_path: str  # 다른 서비스에서 접근 가능한 경로
 
 
+class SessionTTSRequest(BaseModel):
+    """세션 기반 TTS 요청"""
+    session_id: str  # 세션 ID (필수)
+    text: str  # 생성할 텍스트 (필수)
+    output_filename: Optional[str] = "tts_audio.mp3"  # 저장할 파일명
+    voice_id: Optional[str] = None
+    model_id: Optional[str] = None
+    stability: Optional[float] = 0.8
+    similarity_boost: Optional[float] = 0.8
+    style: Optional[float] = 0.4
+    use_speaker_boost: Optional[bool] = True
+
+
+class SessionTTSResponse(BaseModel):
+    """세션 기반 TTS 응답"""
+    success: bool
+    session_id: str
+    filename: str
+    session_path: str  # 세션 폴더 내 경로
+    message: str
+
+
 @app.get("/")
 async def root():
-    """메인 페이지 - static/index.html 반환"""
-    return FileResponse("static/index.html")
+    """API 루트"""
+    return {
+        "message": "ElevenLabs TTS API",
+        "version": "1.0.0",
+        "endpoints": {
+            "POST /generate": "TTS 생성 (일반)",
+            "POST /session/generate": "TTS 생성 (세션 기반)",
+            "GET /audio/{filename}": "오디오 파일 다운로드",
+            "GET /session/{session_id}/files": "세션 내 파일 목록",
+            "GET /session/{session_id}/audio/{filename}": "세션 내 오디오 다운로드",
+            "GET /health": "헬스 체크"
+        }
+    }
 
 
 @app.get("/health")
@@ -157,7 +200,7 @@ async def generate_tts(request: TTSRequest):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"tts_{timestamp}.mp3"
         filepath = os.path.join(OUTPUT_DIR, filename)
-        shared_filepath = os.path.join(SHARED_DIR, filename)
+        shared_filepath = os.path.join(SHARED_TTS_DIR, filename)
 
         # 오디오 데이터를 메모리에 먼저 저장
         audio_data = b""
@@ -231,6 +274,107 @@ async def serve_audio(filename: str):
     if os.path.exists(filepath):
         return FileResponse(filepath, media_type="audio/mpeg")
     raise HTTPException(status_code=404, detail="File not found")
+
+
+# ============================================
+# 세션 기반 엔드포인트
+# ============================================
+@app.post("/session/generate", response_model=SessionTTSResponse, tags=["Session"])
+async def session_generate_tts(request: SessionTTSRequest):
+    """
+    세션 기반 TTS 생성
+    
+    결과 오디오가 세션 폴더에 저장됩니다.
+    다른 서비스(z_image, i2v 등)에서 동일한 session_id로 접근 가능합니다.
+    """
+    try:
+        if not request.text:
+            raise HTTPException(status_code=400, detail="텍스트가 비어있습니다")
+
+        session_dir = get_session_dir(request.session_id)
+        
+        voice_id = request.voice_id or VOICE_ID
+        model_id = request.model_id or MODEL_ID
+
+        # ElevenLabs 클라이언트
+        client = ElevenLabs(api_key=API_KEY)
+
+        # Voice Settings
+        voice_settings = VoiceSettings(
+            stability=request.stability,
+            similarity_boost=request.similarity_boost,
+            style=request.style,
+            use_speaker_boost=request.use_speaker_boost
+        )
+
+        # TTS 생성
+        audio_stream = client.text_to_speech.convert(
+            text=request.text,
+            voice_id=voice_id,
+            model_id=model_id,
+            voice_settings=voice_settings,
+        )
+
+        # 오디오 데이터를 메모리에 먼저 저장
+        audio_data = b""
+        for chunk in audio_stream:
+            audio_data += chunk
+
+        # 파일명 설정
+        output_filename = request.output_filename or "tts_audio.mp3"
+        if not output_filename.endswith(".mp3"):
+            output_filename += ".mp3"
+        
+        # 세션 폴더에 저장
+        session_filepath = os.path.join(session_dir, output_filename)
+        with open(session_filepath, "wb") as f:
+            f.write(audio_data)
+
+        return SessionTTSResponse(
+            success=True,
+            session_id=request.session_id,
+            filename=output_filename,
+            session_path=f"/app/shared/{request.session_id}/{output_filename}",
+            message=f"세션 '{request.session_id}'에 TTS 저장 완료"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/session/{session_id}/files", tags=["Session"])
+async def list_session_files(session_id: str):
+    """세션 폴더 내 파일 목록 조회"""
+    session_dir = os.path.join(SHARED_DIR, session_id)
+    
+    if not os.path.exists(session_dir):
+        return {"session_id": session_id, "files": [], "count": 0, "exists": False}
+    
+    files = []
+    for f in Path(session_dir).glob("*"):
+        if f.is_file():
+            files.append({
+                "filename": f.name,
+                "size_mb": round(f.stat().st_size / (1024 * 1024), 2),
+                "created": datetime.fromtimestamp(f.stat().st_ctime).isoformat()
+            })
+    files.sort(key=lambda x: x["created"], reverse=True)
+    
+    return {"session_id": session_id, "files": files, "count": len(files), "exists": True}
+
+
+@app.get("/session/{session_id}/audio/{filename}", tags=["Session"])
+async def get_session_audio(session_id: str, filename: str):
+    """세션 폴더 내 오디오 파일 다운로드"""
+    session_dir = os.path.join(SHARED_DIR, session_id)
+    filepath = os.path.join(session_dir, filename)
+    
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
+    
+    return FileResponse(filepath, media_type="audio/mpeg", filename=filename)
 
 
 if __name__ == "__main__":
