@@ -4,25 +4,28 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
+ENV TRANSFORMERS_CACHE=/app/.cache
+ENV HF_HOME=/app/.cache
 
 # 시스템 패키지 설치
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
         git \
+        build-essential \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Python 패키지 설치
 COPY requirements.txt ./
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
 # 소스 코드 복사
 COPY . .
 
-# 디렉토리 생성 (필요시)
-RUN mkdir -p uploads outputs images
+# 디렉토리 생성
+RUN mkdir -p uploads outputs images .cache
 
 EXPOSE 3000
 
