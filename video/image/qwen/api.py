@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Union
 import os
 import uuid
 import time
@@ -339,8 +339,8 @@ async def download_default_face():
 @app.post("/edit/gigi", response_model=ImageEditResponse, tags=["GiGi Edit"])
 async def edit_with_gigi_face(
     prompt: str = Form(..., description="편집 프롬프트 (포즈, 표정, 스타일 등 텍스트로 지정)"),
-    style_image: Optional[UploadFile] = File(None, description="스타일 참조 이미지 1 (헤어, 메이크업 등)"),
-    style_image2: Optional[UploadFile] = File(None, description="스타일 참조 이미지 2 (옷, 액세서리 등)"),
+    style_image: UploadFile = File(default=None, description="스타일 참조 이미지 1 (헤어, 메이크업 등)"),
+    style_image2: UploadFile = File(default=None, description="스타일 참조 이미지 2 (옷, 액세서리 등)"),
 ):
     """
     ⭐ 지지 얼굴 기반 이미지 편집
@@ -448,9 +448,9 @@ async def edit_with_gigi_face(
 async def session_edit_with_gigi_face(
     session_id: str = Form(..., description="세션 ID"),
     prompt: str = Form(..., description="편집 프롬프트 (포즈, 표정, 스타일 등 텍스트로 지정)"),
-    style_image: Optional[UploadFile] = File(None, description="스타일 참조 이미지 1 (파일 업로드)"),
-    style_image2: Optional[UploadFile] = File(None, description="스타일 참조 이미지 2 (파일 업로드)"),
-    output_filename: Optional[str] = Form("gigi_styled.png", description="출력 파일명"),
+    style_image: UploadFile = File(default=None, description="스타일 참조 이미지 1 (파일 업로드)"),
+    style_image2: UploadFile = File(default=None, description="스타일 참조 이미지 2 (파일 업로드)"),
+    output_filename: str = Form(default="gigi_styled.png", description="출력 파일명"),
 ):
     """
     ⭐ 세션 기반 지지 얼굴 편집 (파일 직접 업로드)
@@ -565,8 +565,8 @@ async def session_edit_with_gigi_face(
 async def edit_image_form(
     prompt: str = Form(..., description="편집 프롬프트"),
     image1: UploadFile = File(..., description="첫 번째 이미지 (메인)"),
-    image2: Optional[UploadFile] = File(None, description="두 번째 이미지 (참조1)"),
-    image3: Optional[UploadFile] = File(None, description="세 번째 이미지 (참조2)"),
+    image2: UploadFile = File(default=None, description="두 번째 이미지 (참조1)"),
+    image3: UploadFile = File(default=None, description="세 번째 이미지 (참조2)"),
 ):
     """이미지 편집 (Form-data) - 이미지 직접 업로드"""
     start_time = time.time()
