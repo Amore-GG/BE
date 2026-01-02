@@ -343,7 +343,7 @@ async def edit_with_gigi_face(
     style_image2: UploadFile = File(default=None, description="스타일 참조 이미지 2 (옷, 액세서리 등)"),
 ):
     """
-    ⭐ 지지 얼굴 기반 이미지 편집
+    지지 얼굴 기반 이미지 편집
     
     - **image1**: 자동으로 기본 지지 얼굴 사용
     - **prompt**: 포즈, 표정, 스타일 등을 텍스트로 지정

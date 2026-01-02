@@ -225,10 +225,6 @@
             font-size: 1em;
         }
 
-        .timeline {
-            margin-top: 30px;
-        }
-
         .timeline-item {
             background: #f8f9fa;
             border-radius: 12px;
@@ -372,7 +368,6 @@
     </div>
 
     <script>
-        // 페이지 로드 시 시나리오 불러오기
         window.onload = function() {
             const scenario = localStorage.getItem('scenario');
             const brand = localStorage.getItem('brand');
@@ -386,7 +381,6 @@
             document.getElementById('scenario-display').textContent = scenario;
         };
 
-        // 타임테이블 생성 (스트리밍 방식)
         async function generateTimetable() {
             const scenario = localStorage.getItem('scenario');
             const brand = localStorage.getItem('brand') || '';
@@ -397,7 +391,6 @@
                 return;
             }
 
-            // UI 업데이트
             const generateBtn = document.getElementById('generate-btn');
             const resultCard = document.getElementById('result-card');
             const loading = document.getElementById('loading');
@@ -408,12 +401,10 @@
             loading.classList.remove('hidden');
             timelineContent.innerHTML = '';
 
-            // 스트리밍 데이터 저장
             let streamData = {
                 total_duration: videoDuration,
                 scene_count: 0,
-                timetable: [],
-                image_paths: []
+                timetable: []
             };
 
             try {
@@ -445,7 +436,6 @@
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n\n');
 
-                    // 마지막 불완전한 줄은 버퍼에 보관
                     buffer = lines.pop() || '';
 
                     for (const line of lines) {
@@ -453,25 +443,20 @@
                             const eventData = JSON.parse(line.slice(6));
 
                             if (eventData.type === 'metadata') {
-                                // 메타데이터 수신
                                 streamData.scene_count = eventData.data.scene_count;
                                 loading.querySelector('.loading-text').textContent =
                                     `타임테이블 생성 중... (총 ${eventData.data.scene_count}개 장면)`;
 
                             } else if (eventData.type === 'scene') {
-                                // 장면 데이터 수신 - 즉시 화면에 추가
                                 const sceneData = eventData.data;
                                 streamData.timetable.push(sceneData);
 
-                                // 실시간으로 장면 표시
                                 appendScene(sceneData, sceneData.index);
 
-                                // 진행상황 업데이트
                                 loading.querySelector('.loading-text').textContent =
                                     `타임테이블 생성 중... (${sceneData.index + 1}/${streamData.scene_count})`;
 
                             } else if (eventData.type === 'complete') {
-                                // 완료
                                 console.log('타임테이블 생성 완료!');
 
                             } else if (eventData.type === 'error') {
@@ -490,11 +475,9 @@
             }
         }
 
-        // 장면을 하나씩 추가하는 함수
         function appendScene(item, index) {
             const timelineContent = document.getElementById('timeline-content');
 
-            // 첫 번째 장면이면 헤더 추가
             if (index === 0) {
                 const headerHtml = `<div style="margin-bottom: 20px; color: #636e72; font-weight: 600;">
                     장면을 생성하는 중...
@@ -519,17 +502,6 @@
                         <div style="color: #856404; font-size: 1.05em; line-height: 1.6;">
                             "${item.dialogue || '(발화 없음)'}"
                         </div>
-                        ${item.narration ? `
-                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ffeaa7;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                                    <span style="font-size: 1.1em;">🎙️</span>
-                                    <strong style="color: #856404; font-size: 0.9em;">나레이션</strong>
-                                </div>
-                                <div style="color: #856404; font-size: 0.95em; font-style: italic;">
-                                    ${item.narration}
-                                </div>
-                            </div>
-                        ` : ''}
                     </div>
 
                     <div class="prompt-section">
@@ -586,117 +558,12 @@
 
             timelineContent.insertAdjacentHTML('beforeend', sceneHtml);
 
-            // 스크롤을 새로 추가된 장면으로 이동
             const newScene = document.getElementById(`scene-${index}`);
             if (newScene) {
                 newScene.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
 
-        // 타임테이블 표시
-        function displayTimetable(data) {
-            const timelineContent = document.getElementById('timeline-content');
-
-            let html = `<div style="margin-bottom: 20px; color: #636e72;">
-                총 ${data.scene_count}개 장면 / ${data.total_duration}초
-            </div>`;
-
-            data.timetable.forEach((item, index) => {
-                html += `
-                    <div class="timeline-item">
-                        <div class="timeline-header">
-                            <h3 style="color: #2d3436; font-size: 1.1em;">장면 ${index + 1}</h3>
-                            <div class="timeline-time">${item.time_start}s - ${item.time_end}s</div>
-                        </div>
-
-                        <div class="scene-desc">${item.scene_description}</div>
-
-                        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <span style="font-size: 1.2em;">💬</span>
-                                <strong style="color: #856404;">지지의 발화</strong>
-                            </div>
-                            <div style="color: #856404; font-size: 1.05em; line-height: 1.6;">
-                                "${item.dialogue || '(발화 없음)'}"
-                            </div>
-                            ${item.narration ? `
-                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ffeaa7;">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                                        <span style="font-size: 1.1em;">🎙️</span>
-                                        <strong style="color: #856404; font-size: 0.9em;">나레이션</strong>
-                                    </div>
-                                    <div style="color: #856404; font-size: 0.95em; font-style: italic;">
-                                        ${item.narration}
-                                    </div>
-                                </div>
-                            ` : ''}
-                        </div>
-
-                        ${data.image_paths && data.image_paths[index] ? `
-                            <div style="margin: 20px 0;">
-                                <img src="/${data.image_paths[index]}"
-                                     alt="Scene ${index + 1}"
-                                     style="width: 100%; max-width: 600px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                            </div>
-                        ` : ''}
-
-                        <div class="prompt-section">
-                            <div class="prompt-title">
-                                <span class="prompt-badge">T2I</span>
-                                Text-to-Image Prompt
-                            </div>
-                            <div class="prompt-content">
-                                <div class="prompt-field">
-                                    <div class="prompt-field-name">Background:</div>
-                                    <div class="prompt-field-value">${item.t2i_prompt.background}</div>
-                                </div>
-                                <div class="prompt-field">
-                                    <div class="prompt-field-name">Character Pose & Gaze:</div>
-                                    <div class="prompt-field-value">${item.t2i_prompt.character_pose_and_gaze}</div>
-                                </div>
-                                <div class="prompt-field">
-                                    <div class="prompt-field-name">Product:</div>
-                                    <div class="prompt-field-value">${item.t2i_prompt.product}</div>
-                                </div>
-                                <div class="prompt-field">
-                                    <div class="prompt-field-name">Camera Angle:</div>
-                                    <div class="prompt-field-value">${item.t2i_prompt.camera_angle}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="prompt-section" style="margin-top: 15px;">
-                            <div class="prompt-title">
-                                <span class="prompt-badge" style="background: #fd79a8;">Edit</span>
-                                Image Edit Prompt
-                            </div>
-                            <div class="prompt-content">
-                                <div class="prompt-field">
-                                    <div class="prompt-field-name">Pose Change:</div>
-                                    <div class="prompt-field-value">${item.image_edit_prompt.pose_change}</div>
-                                </div>
-                                <div class="prompt-field">
-                                    <div class="prompt-field-name">Gaze Change:</div>
-                                    <div class="prompt-field-value">${item.image_edit_prompt.gaze_change}</div>
-                                </div>
-                                <div class="prompt-field">
-                                    <div class="prompt-field-name">Expression:</div>
-                                    <div class="prompt-field-value">${item.image_edit_prompt.expression}</div>
-                                </div>
-                                <div class="prompt-field">
-                                    <div class="prompt-field-name">Additional Edits:</div>
-                                    <div class="prompt-field-value">${item.image_edit_prompt.additional_edits}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            timelineContent.innerHTML = html;
-        }
-
-        // 이전 페이지로
         function goBack() {
             window.location.href = '/';
         }

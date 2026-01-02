@@ -18,7 +18,6 @@
             padding: 40px 20px;
         }
 
-        /* 헤더 */
         .header {
             max-width: 1400px;
             margin: 0 auto 40px;
@@ -46,7 +45,6 @@
             font-weight: 400;
         }
 
-        /* 단계 표시 */
         .steps {
             display: flex;
             gap: 20px;
@@ -93,7 +91,6 @@
             font-weight: 400;
         }
 
-        /* 메인 레이아웃 */
         .main-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -117,7 +114,6 @@
             margin-bottom: 30px;
         }
 
-        /* 폼 스타일 */
         .form-group {
             margin-bottom: 30px;
         }
@@ -174,7 +170,6 @@
             line-height: 1.5;
         }
 
-        /* 버튼 */
         .generate-btn {
             width: 100%;
             padding: 16px;
@@ -205,7 +200,6 @@
             transform: none;
         }
 
-        /* 결과 영역 */
         .output-card {
             min-height: 400px;
             display: flex;
@@ -229,7 +223,6 @@
             font-style: italic;
         }
 
-        /* 로딩 */
         .loading {
             display: flex;
             flex-direction: column;
@@ -262,7 +255,6 @@
             font-size: 1em;
         }
 
-        /* 반응형 */
         @media (max-width: 1024px) {
             .main-container {
                 grid-template-columns: 1fr;
@@ -277,7 +269,6 @@
     </style>
 </head>
 <body>
-    <!-- 헤더 -->
     <div class="header">
         <div class="logo">
             <h1>GIGI</h1>
@@ -294,9 +285,7 @@
         브랜드를 선택하고 영상 시나리오를 생성하세요
     </div>
 
-    <!-- 메인 컨테이너 -->
     <div class="main-container">
-        <!-- 왼쪽: 입력 폼 -->
         <div class="card">
             <h2 class="card-title">브랜드 선택</h2>
 
@@ -329,7 +318,6 @@
             </button>
         </div>
 
-        <!-- 오른쪽: 결과 -->
         <div class="card output-card">
             <h2 class="card-title">생성된 시나리오</h2>
 
@@ -345,7 +333,6 @@
     </div>
 
     <script>
-        // 페이지 로드 시 브랜드 목록 가져오기
         async function loadBrands() {
             try {
                 const response = await fetch('/brands');
@@ -363,18 +350,15 @@
             }
         }
 
-        // 시나리오 생성
         async function generateScenario() {
             const brand = document.getElementById('brand').value;
             const userQuery = document.getElementById('user-query').value;
 
-            // 유효성 검사
             if (!brand) {
                 alert('브랜드를 선택해주세요.');
                 return;
             }
 
-            // UI 업데이트
             const generateBtn = document.getElementById('generate-btn');
             const loading = document.getElementById('loading');
             const outputContent = document.getElementById('output-content');
@@ -402,15 +386,12 @@
 
                 const data = await response.json();
 
-                // 결과 표시
                 outputContent.textContent = data.scenario;
                 outputContent.classList.remove('empty');
 
-                // 시나리오와 브랜드를 localStorage에 저장
                 localStorage.setItem('scenario', data.scenario);
                 localStorage.setItem('brand', brand);
 
-                // 다음 버튼 표시
                 document.getElementById('next-btn').style.display = 'block';
 
             } catch (error) {
@@ -424,12 +405,10 @@
             }
         }
 
-        // 페이지 2로 이동
         function goToPage2() {
             window.location.href = '/page2';
         }
 
-        // 페이지 로드 시 브랜드 목록 로드
         loadBrands();
     </script>
 </body>
