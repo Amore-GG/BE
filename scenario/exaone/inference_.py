@@ -42,7 +42,9 @@ tokenizer = None
 def load_model():
     """모델을 로드합니다 (최초 1회만 실행) - GPU 우선 사용"""
     global model, tokenizer
-    if model is None:
+    
+    # 모델 또는 토크나이저가 없으면 다시 로드
+    if model is None or tokenizer is None:
         try:
             print("모델 로딩 중...")
             print(f"모델: {model_name}")
@@ -64,16 +66,23 @@ def load_model():
                 trust_remote_code=True
             )
             
+            print("토크나이저 로딩 중...")
             tokenizer = AutoTokenizer.from_pretrained(
                 model_name,
                 trust_remote_code=True
             )
             
-            if tokenizer is None:
-                raise Exception("토크나이저 로딩 실패")
+            # 로딩 검증
             if model is None:
                 raise Exception("모델 로딩 실패")
+            if tokenizer is None:
+                raise Exception("토크나이저 로딩 실패")
             
+            # apply_chat_template 메서드 존재 확인
+            if not hasattr(tokenizer, 'apply_chat_template'):
+                raise Exception("토크나이저에 apply_chat_template 메서드가 없습니다")
+            
+            print(f"✓ 토크나이저 로딩 완료!")
             print(f"✓ 모델 로딩 완료! (Device: {next(model.parameters()).device})")
             
         except Exception as e:
