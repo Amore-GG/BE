@@ -22,9 +22,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # 디렉토리 생성 (필요시)
-RUN mkdir -p uploads outputs
+RUN mkdir -p uploads outputs images
 
 EXPOSE 3000
 
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "3000"]
-
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "3000"]
