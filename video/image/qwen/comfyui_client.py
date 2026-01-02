@@ -223,9 +223,10 @@ class ComfyUIClient:
         self,
         workflow: Dict[str, Any],
         image1_name: str,
-        image2_name: Optional[str] = None
+        image2_name: Optional[str] = None,
+        image3_name: Optional[str] = None
     ) -> Dict[str, Any]:
-        """워크플로우의 이미지 파일명 업데이트"""
+        """워크플로우의 이미지 파일명 업데이트 (최대 3개 이미지 지원)"""
         import copy
         workflow = copy.deepcopy(workflow)  # Deep copy로 변경
         
@@ -251,6 +252,12 @@ class ComfyUIClient:
             node_id, node = load_image_nodes[1]
             node["inputs"]["image"] = image2_name
             print(f"[Workflow] 노드 {node_id}에 image2 설정: {image2_name}")
+        
+        # 세 번째 이미지 노드에 image3 할당 (있는 경우) - v2 workflow 지원
+        if len(load_image_nodes) >= 3 and image3_name:
+            node_id, node = load_image_nodes[2]
+            node["inputs"]["image"] = image3_name
+            print(f"[Workflow] 노드 {node_id}에 image3 설정: {image3_name}")
         
         return workflow
     
