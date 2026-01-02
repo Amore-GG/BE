@@ -1,3 +1,4 @@
+import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import Dict
 import json
@@ -174,18 +175,44 @@ _model = None
 _tokenizer = None
 
 def load_prompt_model():
-    """프롬프트 생성 모델 로드 (EXAONE 재사용)"""
+    """프롬프트 생성 모델 로드 (EXAONE) - GPU 우선 사용"""
     global _model, _tokenizer
-    if _model is None:
+    
+    # 모델 또는 토크나이저가 없으면 다시 로드
+    if _model is None or _tokenizer is None:
         print("프롬프트 생성 모델 로딩 중...")
         model_name = "LGAI-EXAONE/EXAONE-4.0-1.2B"
+        
+        # GPU 사용 가능 여부 확인
+        if torch.cuda.is_available():
+            device = "cuda"
+            print(f"  ✓ GPU 사용: {torch.cuda.get_device_name(0)}")
+        else:
+            device = "cpu"
+            print("  GPU 없음 - CPU 사용")
+        
         _model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            torch_dtype="bfloat16",
-            device_map="auto"
+            torch_dtype=torch.bfloat16 if device == "cuda" else torch.float32,
+            device_map="cuda" if device == "cuda" else "cpu",
+            trust_remote_code=True
         )
-        _tokenizer = AutoTokenizer.from_pretrained(model_name)
-        print("프롬프트 생성 모델 로딩 완료!")
+        
+        print("  토크나이저 로딩 중...")
+        _tokenizer = AutoTokenizer.from_pretrained(
+            model_name,
+            trust_remote_code=True
+        )
+        
+        # 로딩 검증
+        if _model is None:
+            raise Exception("프롬프트 생성 모델 로딩 실패")
+        if _tokenizer is None:
+            raise Exception("프롬프트 생성 토크나이저 로딩 실패")
+        if not hasattr(_tokenizer, 'apply_chat_template'):
+            raise Exception("토크나이저에 apply_chat_template 메서드가 없습니다")
+        
+        print(f"  ✓ 프롬프트 생성 모델 로딩 완료! (Device: {next(_model.parameters()).device})")
 
 
 def extract_json_from_text(text: str) -> Dict:
