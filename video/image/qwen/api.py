@@ -445,19 +445,25 @@ async def edit_with_gigi_face(
 
 
 @app.post("/session/edit/gigi", response_model=ImageEditResponse, tags=["GiGi Edit"])
-async def session_edit_with_gigi_face(request: SessionGigiEditRequest):
+async def session_edit_with_gigi_face(
+    session_id: str = Form(..., description="세션 ID"),
+    prompt: str = Form(..., description="편집 프롬프트 (포즈, 표정, 스타일 등 텍스트로 지정)"),
+    style_image: Optional[UploadFile] = File(None, description="스타일 참조 이미지 1 (파일 업로드)"),
+    style_image2: Optional[UploadFile] = File(None, description="스타일 참조 이미지 2 (파일 업로드)"),
+    output_filename: Optional[str] = Form("gigi_styled.png", description="출력 파일명"),
+):
     """
-    ⭐ 세션 기반 지지 얼굴 편집
+    ⭐ 세션 기반 지지 얼굴 편집 (파일 직접 업로드)
     
     - 기본 지지 얼굴 자동 적용
     - prompt로 포즈, 표정, 스타일 텍스트 지정
-    - 세션 폴더 내 스타일 참조 이미지 사용 가능
-    - 결과도 세션 폴더에 저장
+    - 스타일 참조 이미지 파일 직접 업로드 가능
+    - 결과는 세션 폴더에 저장
     """
     start_time = time.time()
     
     try:
-        session_dir = get_session_dir(request.session_id)
+        session_dir = get_session_dir(session_id)
         
         # 기본 얼굴 이미지 확인
         if not os.path.exists(DEFAULT_FACE_PATH):
@@ -472,24 +478,27 @@ async def session_edit_with_gigi_face(request: SessionGigiEditRequest):
             raise HTTPException(status_code=500, detail="워크플로우 파일이 없습니다")
         
         workflow = client.load_workflow(WORKFLOW_PATH)
+        unique_id = str(uuid.uuid4())[:8]
         
-        # Image 2 (스타일 참조 1) 처리
+        # Image 2 (스타일 참조 1) 처리 - 파일 업로드
         image2_filename = None
-        if request.style_image_filename:
-            image2_path = os.path.join(session_dir, request.style_image_filename)
-            if not os.path.exists(image2_path):
-                raise HTTPException(status_code=404, detail=f"스타일 이미지 1을 찾을 수 없습니다: {request.style_image_filename}")
-            await client.upload_image(image2_path, request.style_image_filename)
-            image2_filename = request.style_image_filename
+        if style_image and style_image.filename:
+            ext2 = os.path.splitext(style_image.filename)[1] or ".png"
+            image2_filename = f"gigi_{unique_id}_style1{ext2}"
+            image2_path = os.path.join(session_dir, image2_filename)
+            with open(image2_path, "wb") as f:
+                f.write(await style_image.read())
+            await client.upload_image(image2_path, image2_filename)
         
-        # Image 3 (스타일 참조 2) 처리
+        # Image 3 (스타일 참조 2) 처리 - 파일 업로드
         image3_filename = None
-        if request.style_image2_filename:
-            image3_path = os.path.join(session_dir, request.style_image2_filename)
-            if not os.path.exists(image3_path):
-                raise HTTPException(status_code=404, detail=f"스타일 이미지 2를 찾을 수 없습니다: {request.style_image2_filename}")
-            await client.upload_image(image3_path, request.style_image2_filename)
-            image3_filename = request.style_image2_filename
+        if style_image2 and style_image2.filename:
+            ext3 = os.path.splitext(style_image2.filename)[1] or ".png"
+            image3_filename = f"gigi_{unique_id}_style2{ext3}"
+            image3_path = os.path.join(session_dir, image3_filename)
+            with open(image3_path, "wb") as f:
+                f.write(await style_image2.read())
+            await client.upload_image(image3_path, image3_filename)
         
         # 워크플로우 업데이트 (image1 = 기본 지지 얼굴)
         workflow = client.update_workflow_images(
@@ -498,7 +507,7 @@ async def session_edit_with_gigi_face(request: SessionGigiEditRequest):
             image2_filename, 
             image3_filename
         )
-        workflow = client.update_workflow_prompt(workflow, request.prompt)
+        workflow = client.update_workflow_prompt(workflow, prompt)
         workflow = client.randomize_seed(workflow)
         
         result = await client.execute_workflow(workflow, timeout=600)
@@ -522,10 +531,10 @@ async def session_edit_with_gigi_face(request: SessionGigiEditRequest):
         )
         
         # 세션 폴더에 저장
-        output_filename = request.output_filename or "gigi_styled.png"
-        if not output_filename.endswith(".png"):
-            output_filename += ".png"
-        output_path = os.path.join(session_dir, output_filename)
+        final_output_filename = output_filename or "gigi_styled.png"
+        if not final_output_filename.endswith(".png"):
+            final_output_filename += ".png"
+        output_path = os.path.join(session_dir, final_output_filename)
         
         with open(output_path, "wb") as f:
             f.write(img_bytes)
@@ -534,10 +543,10 @@ async def session_edit_with_gigi_face(request: SessionGigiEditRequest):
         
         return ImageEditResponse(
             success=True,
-            output_file=output_filename,
-            message=f"세션 '{request.session_id}'에 지지 이미지 저장 완료",
+            output_file=final_output_filename,
+            message=f"세션 '{session_id}'에 지지 이미지 저장 완료",
             processing_time=round(processing_time, 2),
-            session_id=request.session_id,
+            session_id=session_id,
             used_default_face=True
         )
     
