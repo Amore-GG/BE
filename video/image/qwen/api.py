@@ -135,17 +135,17 @@ class ImageEditRequest(BaseModel):
 
 class GigiEditRequest(BaseModel):
     """지지 얼굴 기반 이미지 편집 요청 (기본 얼굴 자동 적용)"""
-    prompt: str = Field(..., description="편집 프롬프트 (포즈, 표정, 스타일 등)")
-    style_image_filename: Optional[str] = Field(None, description="스타일 참조 이미지 (선택)")
-    pose_image_filename: Optional[str] = Field(None, description="포즈 참조 이미지 (선택)")
+    prompt: str = Field(..., description="편집 프롬프트 (포즈, 표정, 스타일 등 텍스트로 지정)")
+    style_image_filename: Optional[str] = Field(None, description="스타일 참조 이미지 1 (선택)")
+    style_image2_filename: Optional[str] = Field(None, description="스타일 참조 이미지 2 (선택)")
 
 
 class SessionGigiEditRequest(BaseModel):
     """세션 기반 지지 얼굴 편집 요청"""
     session_id: str = Field(..., description="세션 ID")
-    prompt: str = Field(..., description="편집 프롬프트")
-    style_image_filename: Optional[str] = Field(None, description="세션 내 스타일 참조 이미지")
-    pose_image_filename: Optional[str] = Field(None, description="세션 내 포즈 참조 이미지")
+    prompt: str = Field(..., description="편집 프롬프트 (포즈, 표정, 스타일 등 텍스트로 지정)")
+    style_image_filename: Optional[str] = Field(None, description="세션 내 스타일 참조 이미지 1")
+    style_image2_filename: Optional[str] = Field(None, description="세션 내 스타일 참조 이미지 2")
     output_filename: Optional[str] = Field("gigi_styled.png", description="출력 파일명")
 
 
@@ -244,8 +244,9 @@ async def root():
         "gigi_mode": {
             "description": "지지 얼굴을 기본으로 사용하여 편집",
             "image1": "자동으로 기본 지지 얼굴 사용",
-            "image2": "스타일 참조 이미지 (선택)",
-            "image3": "포즈 참조 이미지 (선택)"
+            "prompt": "포즈, 표정, 스타일 등 텍스트로 지정",
+            "style_image": "스타일 참조 이미지 1 (파일 업로드, 선택)",
+            "style_image2": "스타일 참조 이미지 2 (파일 업로드, 선택)"
         }
     }
 
@@ -337,16 +338,17 @@ async def download_default_face():
 # ============================================
 @app.post("/edit/gigi", response_model=ImageEditResponse, tags=["GiGi Edit"])
 async def edit_with_gigi_face(
-    prompt: str = Form(..., description="편집 프롬프트 (포즈, 표정, 스타일 등)"),
-    style_image: Optional[UploadFile] = File(None, description="스타일 참조 이미지 (선택)"),
-    pose_image: Optional[UploadFile] = File(None, description="포즈 참조 이미지 (선택)"),
+    prompt: str = Form(..., description="편집 프롬프트 (포즈, 표정, 스타일 등 텍스트로 지정)"),
+    style_image: Optional[UploadFile] = File(None, description="스타일 참조 이미지 1 (헤어, 메이크업 등)"),
+    style_image2: Optional[UploadFile] = File(None, description="스타일 참조 이미지 2 (옷, 액세서리 등)"),
 ):
     """
     ⭐ 지지 얼굴 기반 이미지 편집
     
     - **image1**: 자동으로 기본 지지 얼굴 사용
-    - **style_image**: 스타일 참조 이미지 (헤어, 메이크업, 옷 등)
-    - **pose_image**: 포즈 참조 이미지
+    - **prompt**: 포즈, 표정, 스타일 등을 텍스트로 지정
+    - **style_image**: 스타일 참조 이미지 1 (선택)
+    - **style_image2**: 스타일 참조 이미지 2 (선택)
     """
     start_time = time.time()
     
@@ -367,24 +369,24 @@ async def edit_with_gigi_face(
         workflow = client.load_workflow(WORKFLOW_PATH)
         unique_id = str(uuid.uuid4())[:8]
         
-        # Image 2 (스타일 참조) 처리
+        # Image 2 (스타일 참조 1) 처리
         image2_filename = None
         if style_image and style_image.filename:
             ext2 = os.path.splitext(style_image.filename)[1] or ".png"
-            image2_filename = f"gigi_{unique_id}_style{ext2}"
+            image2_filename = f"gigi_{unique_id}_style1{ext2}"
             image2_path = os.path.join(UPLOAD_DIR, image2_filename)
             with open(image2_path, "wb") as f:
                 f.write(await style_image.read())
             await client.upload_image(image2_path, image2_filename)
         
-        # Image 3 (포즈 참조) 처리
+        # Image 3 (스타일 참조 2) 처리
         image3_filename = None
-        if pose_image and pose_image.filename:
-            ext3 = os.path.splitext(pose_image.filename)[1] or ".png"
-            image3_filename = f"gigi_{unique_id}_pose{ext3}"
+        if style_image2 and style_image2.filename:
+            ext3 = os.path.splitext(style_image2.filename)[1] or ".png"
+            image3_filename = f"gigi_{unique_id}_style2{ext3}"
             image3_path = os.path.join(UPLOAD_DIR, image3_filename)
             with open(image3_path, "wb") as f:
-                f.write(await pose_image.read())
+                f.write(await style_image2.read())
             await client.upload_image(image3_path, image3_filename)
         
         # 워크플로우 업데이트 (image1 = 기본 지지 얼굴)
@@ -448,7 +450,8 @@ async def session_edit_with_gigi_face(request: SessionGigiEditRequest):
     ⭐ 세션 기반 지지 얼굴 편집
     
     - 기본 지지 얼굴 자동 적용
-    - 세션 폴더 내 참조 이미지 사용 가능
+    - prompt로 포즈, 표정, 스타일 텍스트 지정
+    - 세션 폴더 내 스타일 참조 이미지 사용 가능
     - 결과도 세션 폴더에 저장
     """
     start_time = time.time()
@@ -470,23 +473,23 @@ async def session_edit_with_gigi_face(request: SessionGigiEditRequest):
         
         workflow = client.load_workflow(WORKFLOW_PATH)
         
-        # Image 2 (스타일 참조) 처리
+        # Image 2 (스타일 참조 1) 처리
         image2_filename = None
         if request.style_image_filename:
             image2_path = os.path.join(session_dir, request.style_image_filename)
             if not os.path.exists(image2_path):
-                raise HTTPException(status_code=404, detail=f"스타일 이미지를 찾을 수 없습니다: {request.style_image_filename}")
+                raise HTTPException(status_code=404, detail=f"스타일 이미지 1을 찾을 수 없습니다: {request.style_image_filename}")
             await client.upload_image(image2_path, request.style_image_filename)
             image2_filename = request.style_image_filename
         
-        # Image 3 (포즈 참조) 처리
+        # Image 3 (스타일 참조 2) 처리
         image3_filename = None
-        if request.pose_image_filename:
-            image3_path = os.path.join(session_dir, request.pose_image_filename)
+        if request.style_image2_filename:
+            image3_path = os.path.join(session_dir, request.style_image2_filename)
             if not os.path.exists(image3_path):
-                raise HTTPException(status_code=404, detail=f"포즈 이미지를 찾을 수 없습니다: {request.pose_image_filename}")
-            await client.upload_image(image3_path, request.pose_image_filename)
-            image3_filename = request.pose_image_filename
+                raise HTTPException(status_code=404, detail=f"스타일 이미지 2를 찾을 수 없습니다: {request.style_image2_filename}")
+            await client.upload_image(image3_path, request.style_image2_filename)
+            image3_filename = request.style_image2_filename
         
         # 워크플로우 업데이트 (image1 = 기본 지지 얼굴)
         workflow = client.update_workflow_images(
