@@ -1,3 +1,4 @@
+import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # 시스템 프롬프트 (plan.md 기반)
@@ -39,19 +40,30 @@ model = None
 tokenizer = None
 
 def load_model():
-    """모델을 로드합니다 (최초 1회만 실행)"""
+    """모델을 로드합니다 (최초 1회만 실행) - GPU 우선 사용"""
     global model, tokenizer
     if model is None:
         try:
             print("모델 로딩 중...")
             print(f"모델: {model_name}")
             
+            # GPU 사용 가능 여부 확인
+            if torch.cuda.is_available():
+                device = "cuda"
+                print(f"✓ GPU 사용: {torch.cuda.get_device_name(0)}")
+                print(f"  VRAM: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f}GB")
+            else:
+                device = "cpu"
+                print("GPU 없음 - CPU 사용 (느릴 수 있음)")
+            
+            # 모델 로드 - GPU 우선
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
-                torch_dtype="bfloat16",
-                device_map="auto",
+                torch_dtype=torch.bfloat16 if device == "cuda" else torch.float32,
+                device_map="cuda" if device == "cuda" else "cpu",
                 trust_remote_code=True
             )
+            
             tokenizer = AutoTokenizer.from_pretrained(
                 model_name,
                 trust_remote_code=True
@@ -61,8 +73,8 @@ def load_model():
                 raise Exception("토크나이저 로딩 실패")
             if model is None:
                 raise Exception("모델 로딩 실패")
-                
-            print("모델 로딩 완료!")
+            
+            print(f"✓ 모델 로딩 완료! (Device: {next(model.parameters()).device})")
             
         except Exception as e:
             print(f"[ERROR] 모델 로딩 실패: {str(e)}")
@@ -108,8 +120,11 @@ def generate_scenario(brand: str, user_query: str = None) -> str:
         return_tensors="pt"
     )
 
+    # GPU로 이동
+    input_ids = input_ids.to(model.device)
+
     output = model.generate(
-        input_ids.to(model.device),
+        input_ids,
         max_new_tokens=256,
         do_sample=True,
         temperature=0.7,
