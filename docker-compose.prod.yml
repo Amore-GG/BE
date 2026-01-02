@@ -1,5 +1,6 @@
 version: "3.8"
 services:
+
   # # voice-api (zonos)
   # voice-api:
   #   image: ghcr.io/amore-gg/amore-ai-voice:latest
@@ -82,9 +83,17 @@ services:
     environment:
       - ENV=prod
       - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
     volumes:
       - exaone_uploads:/app/uploads
       - exaone_outputs:/app/outputs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: unless-stopped
 
   latentsync-api:
