@@ -42,14 +42,36 @@ def load_model():
     """모델을 로드합니다 (최초 1회만 실행)"""
     global model, tokenizer
     if model is None:
-        print("모델 로딩 중...")
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype="bfloat16",
-            device_map="auto"
-        )
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        print("모델 로딩 완료!")
+        try:
+            print("모델 로딩 중...")
+            print(f"모델: {model_name}")
+            
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype="bfloat16",
+                device_map="auto",
+                trust_remote_code=True
+            )
+            tokenizer = AutoTokenizer.from_pretrained(
+                model_name,
+                trust_remote_code=True
+            )
+            
+            if tokenizer is None:
+                raise Exception("토크나이저 로딩 실패")
+            if model is None:
+                raise Exception("모델 로딩 실패")
+                
+            print("모델 로딩 완료!")
+            
+        except Exception as e:
+            print(f"[ERROR] 모델 로딩 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # 로딩 실패 시 None 유지
+            model = None
+            tokenizer = None
+            raise Exception(f"모델 로딩 실패: {str(e)}")
 
 def generate_scenario(brand: str, user_query: str = None) -> str:
     """
@@ -63,6 +85,10 @@ def generate_scenario(brand: str, user_query: str = None) -> str:
         생성된 시나리오 텍스트
     """
     load_model()
+    
+    # 모델/토크나이저 확인
+    if model is None or tokenizer is None:
+        raise Exception("모델이 로드되지 않았습니다. 서버 로그를 확인하세요.")
 
     # 유저 쿼리가 없으면 디폴트 사용
     if not user_query or user_query.strip() == "":

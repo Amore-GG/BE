@@ -4,7 +4,6 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
-ENV TRANSFORMERS_CACHE=/app/.cache
 ENV HF_HOME=/app/.cache
 
 # 시스템 패키지 설치

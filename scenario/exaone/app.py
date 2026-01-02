@@ -66,9 +66,19 @@ class TimeSlot(BaseModel):
 # 서버 시작시 모델 로드
 @app.on_event("startup")
 async def startup_event():
+    print("=" * 50)
     print("서버 시작 - 모델 로딩 중...")
-    load_model()
-    print("모델 로딩 완료 - 서버 준비됨!")
+    print("=" * 50)
+    try:
+        load_model()
+        print("=" * 50)
+        print("모델 로딩 완료 - 서버 준비됨!")
+        print("=" * 50)
+    except Exception as e:
+        print("=" * 50)
+        print(f"[WARNING] 모델 로딩 실패: {str(e)}")
+        print("API 호출 시 모델 로딩을 다시 시도합니다.")
+        print("=" * 50)
 
 # 시나리오 생성 API
 @app.post("/generate", response_model=ScenarioResponse)
