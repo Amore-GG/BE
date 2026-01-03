@@ -100,6 +100,14 @@ Convert Korean scene descriptions into:
 - Maintain character consistency (always "Gigi")
 - Keep brand names in original form
 - Use professional photography/cinematography terms
+- **CRITICAL - NO OTHER PEOPLE IN BACKGROUND**: The background must NOT contain any other people, crowds, or human figures except Gigi
+  * WRONG: "busy cafe with people walking", "crowded street", "room with family members"
+  * CORRECT: "empty cafe interior", "quiet street with no pedestrians", "private bedroom"
+  * Always specify "empty", "private", "no people", "solitary" for backgrounds
+- **FACE MUST BE CLEARLY VISIBLE**: Gigi's face must always be clearly visible and facing the camera
+  * WRONG: "back view", "looking away", "face covered", "side profile only"
+  * CORRECT: "front facing", "looking at camera", "clear face visible", "three-quarter view with face visible"
+  * Avoid scenes where face is obscured by hands, products, towels, or hair
 
 **Few-Shot Examples (각 장면마다 다른 발화 - 반복 금지)**:
 
@@ -108,8 +116,8 @@ Current Scene: "지지가 침대에서 일어나 창문을 열고 햇살을 맞�
 Output:
 {
   "dialogue": "안녕하세요! 아침 햇살 진짜 좋네요.",
-  "t2i_prompt": { "background": "bedroom with window, morning sunlight streaming in", "character_pose_and_gaze": "Gigi standing by window, arms raised welcoming sunlight", "product": "none", "camera_angle": "side angle capturing window light" },
-  "image_edit_prompt": { "pose_change": "open curtains and raise arms", "gaze_change": "looking out window", "expression": "refreshed morning smile", "additional_edits": "add sunlight rays" },
+  "t2i_prompt": { "background": "empty private bedroom with window, morning sunlight streaming in, no other people", "character_pose_and_gaze": "Gigi standing by window, front facing with clear face visible, arms raised welcoming sunlight", "product": "none", "camera_angle": "three-quarter angle capturing window light and Gigi's face" },
+  "image_edit_prompt": { "pose_change": "open curtains and raise arms", "gaze_change": "looking at camera with smile", "expression": "refreshed morning smile, face clearly visible", "additional_edits": "add sunlight rays" },
   "background_sounds_prompt": "birds chirping, window opening sound"
 }
 
@@ -119,8 +127,8 @@ Current Scene: "지지가 욕실 거울 앞에서 세안을 함"
 Output:
 {
   "dialogue": "오, 물 차가워요.",
-  "t2i_prompt": { "background": "bright bathroom with mirror", "character_pose_and_gaze": "Gigi splashing water on face over sink", "product": "none", "camera_angle": "front view at mirror" },
-  "image_edit_prompt": { "pose_change": "lean over sink, hands cupped with water", "gaze_change": "looking down at sink", "expression": "focused on washing", "additional_edits": "water droplets effect" },
+  "t2i_prompt": { "background": "bright private bathroom with mirror, empty, no other people", "character_pose_and_gaze": "Gigi at sink, face visible in mirror reflection, hands near face with water", "product": "none", "camera_angle": "mirror reflection shot showing Gigi's face clearly" },
+  "image_edit_prompt": { "pose_change": "hands cupped with water near chin, face visible", "gaze_change": "looking at mirror, face clearly shown", "expression": "refreshed expression, eyes open", "additional_edits": "water droplets effect" },
   "background_sounds_prompt": "water running, splashing sounds"
 }
 
@@ -129,9 +137,9 @@ Previous Scene: "지지가 욕실 거울 앞에서 세안을 함"
 Current Scene: "지지가 타올로 얼굴을 닦으며 거울을 봄"
 Output:
 {
-  "dialogue": "",
-  "t2i_prompt": { "background": "bathroom mirror and sink area", "character_pose_and_gaze": "Gigi patting face with white towel, looking at mirror", "product": "white face towel", "camera_angle": "mirror reflection shot" },
-  "image_edit_prompt": { "pose_change": "gently pat face with towel", "gaze_change": "checking skin in mirror", "expression": "satisfied clean feeling", "additional_edits": "fresh dewy skin" },
+  "dialogue": "상쾌하네요.",
+  "t2i_prompt": { "background": "private bathroom mirror and sink area, empty, no other people", "character_pose_and_gaze": "Gigi holding towel near neck area, face fully visible and looking at mirror, front facing", "product": "white face towel held low", "camera_angle": "mirror reflection shot with clear face" },
+  "image_edit_prompt": { "pose_change": "towel held at neck level, not covering face", "gaze_change": "looking directly at mirror with smile", "expression": "satisfied clean feeling, face unobstructed", "additional_edits": "fresh dewy skin" },
   "background_sounds_prompt": "soft towel rustling"
 }
 
@@ -141,8 +149,8 @@ Current Scene: "지지가 화장대에서 에센스 병을 집음"
 Output:
 {
   "dialogue": "이거 완전 제 스타일이에요.",
-  "t2i_prompt": { "background": "vanity table with skincare products", "character_pose_and_gaze": "Gigi reaching for essence bottle on vanity", "product": "essence bottle among other products", "camera_angle": "overhead angle on vanity" },
-  "image_edit_prompt": { "pose_change": "hand reaching to pick up bottle", "gaze_change": "looking at the product", "expression": "excited to use favorite product", "additional_edits": "soft focus on other products" },
+  "t2i_prompt": { "background": "private vanity table with skincare products, empty room, no other people", "character_pose_and_gaze": "Gigi reaching for essence bottle, face visible in three-quarter view, looking at product with smile", "product": "essence bottle among other products", "camera_angle": "medium shot showing Gigi's face and hands" },
+  "image_edit_prompt": { "pose_change": "hand reaching to pick up bottle", "gaze_change": "looking at the product with excited eyes", "expression": "excited smile, face clearly visible", "additional_edits": "soft focus on other products" },
   "background_sounds_prompt": ""
 }
 
@@ -151,9 +159,9 @@ Previous Scene: "지지가 화장대에서 에센스 병을 집음"
 Current Scene: "지지가 손바닥에 에센스를 덜어냄"
 Output:
 {
-  "dialogue": "",
-  "t2i_prompt": { "background": "close view of hands", "character_pose_and_gaze": "Gigi dispensing essence into palm", "product": "essence bottle tilted over open palm", "camera_angle": "extreme close-up on hands" },
-  "image_edit_prompt": { "pose_change": "tilt bottle to dispense product", "gaze_change": "focused on amount in palm", "expression": "careful and precise", "additional_edits": "product texture visible" },
+  "dialogue": "이 정도면 될 것 같아요.",
+  "t2i_prompt": { "background": "soft blurred private room background, no other people", "character_pose_and_gaze": "Gigi holding bottle and dispensing essence, face visible looking down at hands with gentle smile", "product": "essence bottle tilted over open palm", "camera_angle": "medium close-up showing face and hands together" },
+  "image_edit_prompt": { "pose_change": "tilt bottle to dispense product, face tilted down but visible", "gaze_change": "looking down at palm with focused expression", "expression": "careful and precise, face clearly shown", "additional_edits": "product texture visible" },
   "background_sounds_prompt": "pump clicking sound"
 }
 
@@ -163,8 +171,8 @@ Current Scene: "지지가 양손으로 에센스를 비벼 온도를 높임"
 Output:
 {
   "dialogue": "따뜻하게 하면 더 좋거든요.",
-  "t2i_prompt": { "background": "neutral background blur", "character_pose_and_gaze": "Gigi rubbing palms together warming product", "product": "essence between palms", "camera_angle": "close-up on hands rubbing" },
-  "image_edit_prompt": { "pose_change": "rub palms in circular motion", "gaze_change": "looking at hands", "expression": "explaining technique", "additional_edits": "motion blur on hands" },
+  "t2i_prompt": { "background": "soft neutral background blur, private space, no other people", "character_pose_and_gaze": "Gigi rubbing palms together at chest level, face visible looking at camera with friendly expression", "product": "essence between palms", "camera_angle": "medium shot showing face and hands together" },
+  "image_edit_prompt": { "pose_change": "rub palms in circular motion at chest height", "gaze_change": "looking at camera while explaining", "expression": "friendly explaining expression, face clearly visible", "additional_edits": "slight motion blur on hands" },
   "background_sounds_prompt": "hands rubbing together softly"
 }
 
