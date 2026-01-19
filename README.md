@@ -1,6 +1,6 @@
 ## 아모레퍼시픽 AI 광고 영상 자동 생성 시스템
 
-> 화장품 브랜드 광고 영상을 AI로 자동 생성하는 End-to-End 파이프라인
+> 화장품 브랜드 광고 영상을 AI로 자동 생성하는 End-to-End 파이프라인 (https://amorepacific-ai.notion.site/)
 
 ### 1. 프로젝트 소개
 
