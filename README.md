@@ -69,7 +69,7 @@
 
 ### 3. ComfyUI
 
-이 프로젝트는 **ComfyUI**를 AI 모델 실행 엔진으로 활용합니다. ComfyUI는 노드 기반의 Stable Diffusion 워크플로우 도구로, 복잡한 AI 파이프라인을 시각적으로 구성하고 API로 실행할 수 있습니다. (https://www.comfy.org/)
+이 프로젝트는 **ComfyUI**를 AI 모델 실행 엔진으로 활용합니다. ComfyUI는 노드 기반의 Stable Diffusion 워크플로우 도구로 복잡한 AI 파이프라인을 시각적으로 구성하고 API로 실행할 수 있습니다. (https://www.comfy.org/)
 
 작동 방식
 1. **워크플로우 정의**: 각 AI 기능별로 JSON 형태의 워크플로우 파일 준비
@@ -123,7 +123,7 @@ shared/
 
 ### 5. 배포
 
-프로덕션 환경에서는 **GHCR(GitHub Container Registry)**에 빌드된 이미지를 사용합니다.
+프로덕션 환경에서는 `GHCR(GitHub Container Registry)`에 빌드된 이미지를 사용합니다.
 
 ```bash
 # 이미지 예시
